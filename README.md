@@ -180,7 +180,6 @@ Por ser uma plataforma especializada, os anúncios poderão utilizar campos dife
 - planos profissionais;
 - anúncios patrocinados;
 - recomendação automática de materiais compatíveis;
-- painel de economia e impacto ambiental;
 - perfil de profissionais da construção civil;
 - expansão para outras cidades e estados.
 
@@ -203,7 +202,6 @@ Por ser uma plataforma especializada, os anúncios poderão utilizar campos dife
 - alerta de materiais procurados;
 - foco inicial no mercado local;
 - integração futura com profissionais e transportadores;
-- benefícios econômicos e ambientais;
 - possibilidade de expansão nacional.
 
 ## Regras e cuidados
@@ -218,10 +216,3 @@ Para preservar a confiança e a segurança da comunidade, a plataforma deverá e
 - comprador e vendedor deverão verificar o material antes de concluir a negociação;
 - denúncias poderão resultar na suspensão do anúncio ou da conta;
 - dados pessoais deverão ser coletados somente quando necessários.
-
-## Fontes
-
-- [Prefeitura de Palmas — Construção civil, logística e serviços impulsionam o crescimento econômico](https://www.palmas.to.gov.br/core/noticias/palmas-em-alta-mais-de-66-mil-novas-empresas-em-2026-impulsionam-crescimento-e-revelam-setores-em-destaque/)
-- [Observatório Setorial Territorial do Sebrae — Perfil econômico de Palmas](https://observatorio.sebrae.com.br/profile/geo/palmas)
-- [Sebrae — A importância do ESG na construção civil](https://meuatendimento.sebrae.com.br/sites/PortalSebrae/artigos/a-importancia-da-esg-na-construcao-civil%2C0db45c246b935810VgnVCM100000d701210aRCRD)
-
