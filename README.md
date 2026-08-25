@@ -137,7 +137,6 @@ Por ser uma plataforma especializada, os anúncios poderão utilizar campos dife
 - upload de fotografias;
 - categorias e atributos específicos;
 - quantidade disponível;
-- venda total ou parcial;
 - indicação de retirada ou possibilidade de entrega;
 - estados `disponível`, `reservado` e `vendido`.
 
