@@ -6,8 +6,8 @@ Revises:
 from collections.abc import Sequence
 
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+import sqlalchemy as sa # pyright: ignore[reportMissingImports]
+from sqlalchemy.dialects import postgresql # pyright: ignore[reportMissingImports]
 
 
 revision: str = "20260831_0001"
