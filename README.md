@@ -247,4 +247,4 @@ A documentação interativa estará disponível em `http://127.0.0.1:8000/docs` 
 
 ### Estrutura das rotas
 
-As rotas ficam em `backend/app/api/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.
+As rotas ficam em `backend/app/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.
