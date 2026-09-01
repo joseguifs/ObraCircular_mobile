@@ -215,3 +215,36 @@ Para preservar a confiança e a segurança da comunidade, a plataforma deverá e
 - comprador e vendedor deverão verificar o material antes de concluir a negociação;
 - denúncias poderão resultar na suspensão do anúncio ou da conta;
 - dados pessoais deverão ser coletados somente quando necessários.
+
+## Executando o backend
+
+### Requisitos
+
+- Python 3.11 ou superior;
+- PostgreSQL em execução;
+- banco de dados `obra_circular` criado.
+
+### Configuração
+
+No PowerShell, a partir da raiz do repositório:
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Revise o `DATABASE_URL` do arquivo `backend/.env` com o usuário e a senha do seu PostgreSQL. Em seguida, aplique as migrations e inicie a API:
+
+```powershell
+python -m alembic upgrade head
+fastapi dev app/main.py
+```
+
+A documentação interativa estará disponível em `http://127.0.0.1:8000/docs` e o endpoint de saúde em `http://127.0.0.1:8000/health`.
+
+### Estrutura das rotas
+
+As rotas ficam em `backend/app/api/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.
