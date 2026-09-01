@@ -17,7 +17,7 @@ Professor: Dr. Jackson Gomes de Souza
 
 ## Sobre o projeto
 
-O **ObraCircular** é uma plataforma digital voltada à compra, venda e reaproveitamento de materiais excedentes de obras e reformas.
+O **ObraCircular** é uma plataforma digital voltada à divulgação de materiais excedentes de obras e reformas.
 
 A solução conecta pessoas, profissionais, lojas e construtoras que possuem materiais sem uso a compradores que procuram produtos em pequenas quantidades ou por preços mais acessíveis.
 
@@ -31,7 +31,7 @@ Ao mesmo tempo, outras pessoas precisam comprar exatamente esses materiais, às 
 
 Em Palmas, a construção civil está entre os setores de maior expansão. Segundo o Observatório Econômico da Prefeitura, **807 novas empresas ligadas ao setor foram abertas entre janeiro e maio de 2026**, incluindo negócios de alvenaria, pintura, instalações elétricas e serviços especializados.
 
-O ObraCircular nasce para aproximar esses dois lados e transformar excedentes em novas oportunidades de economia e geração de renda.
+O ObraCircular nasce para aproximar esses dois lados e transformar excedentes em novas oportunidades de economia.
 
 ## Problema
 
@@ -91,13 +91,6 @@ Facilitar o reaproveitamento e a comercialização de materiais excedentes de ob
 - empresas que precisam de materiais em menor quantidade;
 - pessoas procurando peças de reposição ou modelos fora de linha.
 
-### Parceiros
-
-- transportadores e serviços de frete;
-- cooperativas e iniciativas de reaproveitamento;
-- lojas e fornecedores do setor;
-- profissionais especializados.
-
 ## Como funciona
 
 1. O vendedor cria uma conta e publica o material excedente.
@@ -147,13 +140,6 @@ Por ser uma plataforma especializada, os anúncios poderão utilizar campos dife
 - ordenação por preço, distância ou data;
 - favoritos;
 - visualização de materiais próximos.
-
-### Negociação
-
-- envio, aceitação e recusa de propostas;
-- reserva temporária do material;
-- registro do andamento da negociação;
-- avaliação entre comprador e vendedor.
 
 ### Alerta de procura
 
