@@ -10,6 +10,10 @@ from app.db.session import get_db
 from app.models.usuario import Usuario
 from app.schemas.usuario import UsuarioCriacao, UsuarioResposta
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
