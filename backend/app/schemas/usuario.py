@@ -4,7 +4,7 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models.enums import StatusUsuario
 
@@ -96,6 +96,24 @@ class UsuarioCriacao(BaseModel):
 
         # Armazena em formato semelhante ao padrão internacional.
         return f"+55{numeros}"
+
+
+class UsuarioAtualizacao(UsuarioCriacao):
+    model_config = ConfigDict(extra="forbid")
+
+    nome: str | None = Field(default=None, min_length=3, max_length=150)
+    email: EmailStr | None = Field(default=None, max_length=255)
+    senha: str | None = Field(default=None, min_length=8, max_length=72)
+    status: StatusUsuario | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def rejeitar_nulos(cls, dados: object) -> object:
+        if isinstance(dados, dict):
+            for campo in ("nome", "email", "senha", "status"):
+                if campo in dados and dados[campo] is None:
+                    raise ValueError(f"o campo {campo} não pode ser nulo")
+        return dados
 
 
 class UsuarioResposta(BaseModel):
