@@ -3,6 +3,17 @@ import { Platform } from "react-native";
 const enderecoLocal = Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
 export const apiUrl = (process.env.EXPO_PUBLIC_API_URL || enderecoLocal).replace(/\/$/, "");
 
+// Mantém o status HTTP para que a tela diferencie recurso inexistente de falha técnica.
+export class ErroApi extends Error {
+  status: number;
+
+  constructor(mensagem: string, status: number) {
+    super(mensagem);
+    this.name = "ErroApi";
+    this.status = status;
+  }
+}
+
 function extrairMensagem(detail: unknown) {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
@@ -36,7 +47,10 @@ export async function requisicaoApi<T>(caminho: string, init?: RequestInit): Pro
 
   const corpo = resposta.status === 204 ? null : await resposta.json().catch(() => null);
   if (!resposta.ok) {
-    throw new Error(extrairMensagem(corpo?.detail) || "A API não conseguiu concluir a solicitação.");
+    throw new ErroApi(
+      extrairMensagem(corpo?.detail) || "A API não conseguiu concluir a solicitação.",
+      resposta.status,
+    );
   }
 
   return corpo as T;

@@ -27,3 +27,7 @@ export async function cadastrarUsuario(dados: CadastroUsuario): Promise<Usuario>
 export function listarUsuarios(): Promise<Usuario[]> {
   return requisicaoApi<Usuario[]>("/api/v1/usuarios");
 }
+
+export function obterUsuario(usuarioId: string): Promise<Usuario> {
+  return requisicaoApi<Usuario>(`/api/v1/usuarios/${encodeURIComponent(usuarioId)}`);
+}
