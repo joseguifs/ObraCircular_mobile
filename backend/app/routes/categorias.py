@@ -1,4 +1,13 @@
-from uuid import UUID
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.models.categoria import Categoria
+from app.models.enums import StatusCategoria
+from app.schemas.categoria import CategoriaResponse
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select

@@ -248,3 +248,25 @@ A documentação interativa estará disponível em `http://127.0.0.1:8000/docs` 
 ### Estrutura das rotas
 
 As rotas ficam em `backend/app/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.
+
+### Usuários
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/usuarios` | Cadastra um usuário (201). |
+| GET | `/api/v1/usuarios` | Lista usuários não excluídos (200). |
+| GET | `/api/v1/usuarios/{usuario_id}` | Consulta um usuário pelo UUID (200). |
+| PATCH | `/api/v1/usuarios/{usuario_id}` | Edita somente os campos enviados (200). |
+| DELETE | `/api/v1/usuarios/{usuario_id}` | Preenche `deletado_em`, preservando o registro (204, sem corpo). |
+
+A edição aceita `nome`, `email`, `senha`, `telefone` e `status` (`ATIVO`, `INATIVO` ou `BLOQUEADO`). As validações são as mesmas do cadastro. Envie `telefone: null` para remover o telefone; os demais campos não aceitam `null`. Campos omitidos são preservados, e a senha é armazenada como hash.
+
+Consulta, edição e exclusão retornam 404 para UUIDs inexistentes ou usuários já excluídos. UUIDs e dados inválidos retornam 422. E-mails duplicados retornam 409, inclusive quando pertencem a usuários excluídos, conforme a restrição de unicidade do banco.
+
+Execute os testes dos endpoints com o ambiente virtual ativado, a partir de `backend`:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+Os testes usam SQLite em memória e não alteram o banco configurado na aplicação.
