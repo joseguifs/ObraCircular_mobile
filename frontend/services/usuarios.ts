@@ -58,3 +58,31 @@ export async function cadastrarUsuario(dados: CadastroUsuario): Promise<Usuario>
 
   return corpo as Usuario;
 }
+
+type LoginCredenciais = {
+  email: string;
+  senha: string;
+};
+
+export async function autenticarUsuario(dados: LoginCredenciais): Promise<Usuario> {
+  let resposta: Response;
+
+  try {
+    resposta = await fetch(`${apiUrl}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados),
+    });
+  } catch {
+    throw new Error("Não foi possível conectar à API. Verifique se o backend está em execução.");
+  }
+
+  const corpo = await resposta.json().catch(() => null);
+
+  if (!resposta.ok) {
+    const mensagem = extrairMensagem(corpo?.detail);
+    throw new Error(mensagem || "Não foi possível entrar. Tente novamente.");
+  }
+
+  return corpo as Usuario;
+}
