@@ -34,7 +34,7 @@ Copie `.env.example` para `.env` e ajuste `EXPO_PUBLIC_API_URL` conforme o ambie
 - iOS Simulator ou web: `http://localhost:8000`
 - Dispositivo físico: use o IP local do computador que executa o backend
 
-O cadastro de usuário envia os dados para `POST /api/v1/usuarios`, e o cadastro de anúncio usa os endpoints de usuários, endereços, categorias e anúncios do backend.
+O cadastro de usuário envia os dados para `POST /api/v1/usuarios` e o login para `POST /api/v1/auth/login`. O cadastro de anúncio usa os endpoints de usuários, endereços, categorias e anúncios do backend.
 
 ## Verificações
 

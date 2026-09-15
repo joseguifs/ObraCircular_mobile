@@ -27,3 +27,15 @@ export async function cadastrarUsuario(dados: CadastroUsuario): Promise<Usuario>
 export function listarUsuarios(): Promise<Usuario[]> {
   return requisicaoApi<Usuario[]>("/api/v1/usuarios");
 }
+
+type LoginCredenciais = {
+  email: string;
+  senha: string;
+};
+
+export async function autenticarUsuario(dados: LoginCredenciais): Promise<Usuario> {
+  return requisicaoApi<Usuario>("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify(dados),
+  });
+}

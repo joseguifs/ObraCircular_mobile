@@ -17,6 +17,8 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
         <Stack.Screen name="anuncios/novo" options={{ title: "Novo anúncio" }} />
         <Stack.Screen name="anuncios/sucesso" options={{ headerShown: false }} />
       </Stack>
