@@ -6,9 +6,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Marca } from "@/components/Marca";
 import { cores, raios } from "@/theme/tokens";
 
-export default function AnuncioValidadoScreen() {
-  const { titulo } = useLocalSearchParams<{ titulo?: string }>();
+export default function AnuncioPublicadoScreen() {
+  const { id, titulo } = useLocalSearchParams<{ id?: string; titulo?: string }>();
   const tituloSeguro = typeof titulo === "string" && titulo.trim() ? titulo : "Seu anúncio";
+  const idSeguro = typeof id === "string" && id.trim() ? id : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -18,11 +19,12 @@ export default function AnuncioValidadoScreen() {
           <View style={styles.successIcon}>
             <Ionicons color={cores.sucesso} name="checkmark-circle" size={72} />
           </View>
-          <Text style={styles.eyebrow}>FORMULÁRIO VALIDADO</Text>
-          <Text style={styles.title}>Tudo certo com o cadastro!</Text>
+          <Text style={styles.eyebrow}>ANÚNCIO PUBLICADO</Text>
+          <Text style={styles.title}>Cadastro concluído!</Text>
           <Text style={styles.subtitle}>
-            “{tituloSeguro}” passou pelas validações do frontend. A publicação na API será ativada junto da autenticação.
+            “{tituloSeguro}” foi salvo com sucesso e já está disponível na API.
           </Text>
+          {idSeguro ? <Text style={styles.identifier}>Identificador: {idSeguro}</Text> : null}
 
           <Link href="/anuncios/novo" asChild>
             <Text accessibilityRole="link" style={styles.primaryLink}>
@@ -64,6 +66,14 @@ const styles = StyleSheet.create({
   eyebrow: { color: cores.sucesso, fontSize: 11, fontWeight: "800", letterSpacing: 1.3 },
   title: { marginTop: 8, color: cores.texto, fontSize: 27, lineHeight: 34, fontWeight: "800", textAlign: "center" },
   subtitle: { marginTop: 10, marginBottom: 26, color: cores.textoSecundario, fontSize: 15, lineHeight: 23, textAlign: "center" },
+  identifier: {
+    marginTop: -14,
+    marginBottom: 26,
+    color: cores.textoSecundario,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+  },
   primaryLink: {
     width: "100%",
     overflow: "hidden",

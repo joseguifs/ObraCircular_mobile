@@ -34,10 +34,11 @@ export function validarAnuncio(dados: DadosFormularioAnuncio): ErrosFormularioAn
   else if (titulo.length > 150) erros.titulo = "O título deve ter no máximo 150 caracteres.";
 
   if (descricao.length < 20) erros.descricao = "Descreva o material em pelo menos 20 caracteres.";
+  else if (descricao.length > 5000) erros.descricao = "A descrição deve ter no máximo 5.000 caracteres.";
   if (!dados.categoriaId) erros.categoriaId = "Selecione uma categoria.";
   if (!dados.preco.trim()) erros.preco = "Informe o preço, mesmo que seja R$ 0,00.";
-  if (!/^\d+$/.test(dados.quantidade) || !Number.isInteger(quantidade) || quantidade < 1) {
-    erros.quantidade = "Informe uma quantidade inteira a partir de 1.";
+  if (!/^\d+$/.test(dados.quantidade) || !Number.isInteger(quantidade) || quantidade < 0) {
+    erros.quantidade = "Informe uma quantidade inteira a partir de 0.";
   }
   if (dados.imagemUrl.trim() && !/^https?:\/\/\S+$/i.test(dados.imagemUrl.trim())) {
     erros.imagemUrl = "Informe um endereço de imagem iniciado por http:// ou https://.";

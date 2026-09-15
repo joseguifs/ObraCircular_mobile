@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -17,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CampoFormulario } from "@/components/CampoFormulario";
 import { Marca } from "@/components/Marca";
-import { categorias, CategoriaId } from "@/features/anuncios/categorias";
+import { obterIconeCategoria } from "@/features/anuncios/categorias";
 import {
   DadosFormularioAnuncio,
   ErrosFormularioAnuncio,
@@ -25,6 +26,17 @@ import {
   normalizarAnuncio,
   validarAnuncio,
 } from "@/features/anuncios/validacao";
+import {
+  DadosEndereco,
+  ErrosEndereco,
+  formatarCep,
+  normalizarEndereco,
+  validarEndereco,
+} from "@/features/anuncios/validacaoEndereco";
+import { cadastrarAnuncio } from "@/services/anuncios";
+import { Categoria, listarCategorias } from "@/services/categorias";
+import { ContextoPublicacao, obterContextoPublicacao } from "@/services/contextoPublicacao";
+import { cadastrarEndereco } from "@/services/enderecos";
 import { cores, raios } from "@/theme/tokens";
 
 const estadoInicial: DadosFormularioAnuncio = {
@@ -36,13 +48,55 @@ const estadoInicial: DadosFormularioAnuncio = {
   imagemUrl: "",
 };
 
+const enderecoInicial: DadosEndereco = {
+  cep: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
+  bairro: "",
+  cidade: "",
+  estado: "",
+};
+
 export default function NovoAnuncioScreen() {
   const { width } = useWindowDimensions();
   const [dados, setDados] = useState(estadoInicial);
   const [erros, setErros] = useState<ErrosFormularioAnuncio>({});
+  const [dadosEndereco, setDadosEndereco] = useState(enderecoInicial);
+  const [errosEndereco, setErrosEndereco] = useState<ErrosEndereco>({});
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [contexto, setContexto] = useState<ContextoPublicacao | null>(null);
+  const [carregandoDados, setCarregandoDados] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [erroDependencias, setErroDependencias] = useState<string | null>(null);
+  const [erroApi, setErroApi] = useState<string | null>(null);
 
   const conteudoEstreito = width < 560;
   const categoriaSelecionada = categorias.find((categoria) => categoria.id === dados.categoriaId);
+
+  const carregarDependencias = useCallback(async () => {
+    setCarregandoDados(true);
+    setErroDependencias(null);
+    try {
+      const [categoriasDaApi, contextoDaApi] = await Promise.all([
+        listarCategorias(),
+        obterContextoPublicacao(),
+      ]);
+      if (categoriasDaApi.length === 0) {
+        throw new Error("Nenhuma categoria ativa foi encontrada.");
+      }
+      setCategorias(categoriasDaApi);
+      setContexto(contextoDaApi);
+    } catch (error) {
+      setErroDependencias(error instanceof Error ? error.message : "Não foi possível preparar o formulário.");
+    } finally {
+      setCarregandoDados(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregarDependencias();
+  }, [carregarDependencias]);
 
   function atualizar<K extends keyof DadosFormularioAnuncio>(campo: K, valor: DadosFormularioAnuncio[K]) {
     setDados((atual) => ({ ...atual, [campo]: valor }));
@@ -51,18 +105,51 @@ export default function NovoAnuncioScreen() {
     }
   }
 
-  function enviar() {
+  function atualizarEndereco<K extends keyof DadosEndereco>(campo: K, valor: DadosEndereco[K]) {
+    setDadosEndereco((atual) => ({ ...atual, [campo]: valor }));
+    if (errosEndereco[campo]) {
+      setErrosEndereco((atuais) => ({ ...atuais, [campo]: undefined }));
+    }
+  }
+
+  async function enviar() {
     Keyboard.dismiss();
     const novosErros = validarAnuncio(dados);
+    const novosErrosEndereco = contexto?.endereco ? {} : validarEndereco(dadosEndereco);
     setErros(novosErros);
+    setErrosEndereco(novosErrosEndereco);
+    setErroApi(null);
 
-    if (Object.keys(novosErros).length > 0) return;
+    if (
+      Object.keys(novosErros).length > 0 ||
+      Object.keys(novosErrosEndereco).length > 0 ||
+      !contexto
+    ) return;
 
-    const anuncio = normalizarAnuncio(dados);
-    router.replace({
-      pathname: "/anuncios/sucesso",
-      params: { titulo: anuncio.titulo },
-    });
+    setEnviando(true);
+    try {
+      const endereco = contexto.endereco ?? await cadastrarEndereco({
+        ...normalizarEndereco(dadosEndereco),
+        usuario_id: contexto.vendedor.id,
+      });
+      if (!contexto.endereco) {
+        setContexto({ ...contexto, endereco });
+      }
+
+      const anuncio = await cadastrarAnuncio({
+        ...normalizarAnuncio(dados),
+        vendedor_id: contexto.vendedor.id,
+        endereco_id: endereco.id,
+      });
+      router.replace({
+        pathname: "/anuncios/sucesso",
+        params: { id: anuncio.id, titulo: anuncio.titulo },
+      });
+    } catch (error) {
+      setErroApi(error instanceof Error ? error.message : "Não foi possível cadastrar o anúncio.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -90,6 +177,33 @@ export default function NovoAnuncioScreen() {
                 Conte o que sobrou da obra para que outra pessoa possa reaproveitar.
               </Text>
             </View>
+
+            {carregandoDados ? (
+              <View style={styles.dependencyCard}>
+                <ActivityIndicator color={cores.acao} />
+                <Text style={styles.dependencyText}>Carregando categorias e dados de publicação...</Text>
+              </View>
+            ) : erroDependencias ? (
+              <View style={[styles.dependencyCard, styles.dependencyCardError]}>
+                <Ionicons color={cores.erro} name="alert-circle-outline" size={22} />
+                <Text accessibilityLiveRegion="polite" style={[styles.dependencyText, styles.dependencyTextError]}>
+                  {erroDependencias}
+                </Text>
+                <Pressable accessibilityRole="button" onPress={carregarDependencias}>
+                  <Text style={styles.retryText}>Tentar novamente</Text>
+                </Pressable>
+              </View>
+            ) : contexto ? (
+              <View style={styles.dependencyCard}>
+                <Ionicons color={cores.destaque} name="location-outline" size={22} />
+                <Text style={styles.dependencyText}>
+                  Publicando como <Text style={styles.dependencyStrong}>{contexto.vendedor.nome}</Text>
+                  {contexto.endereco
+                    ? ` em ${contexto.endereco.cidade}/${contexto.endereco.estado}.`
+                    : ". Informe abaixo o primeiro endereço de retirada."}
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.section}>
               <View style={styles.sectionHeading}>
@@ -126,7 +240,7 @@ export default function NovoAnuncioScreen() {
                       accessibilityRole="radio"
                       accessibilityState={{ selected: selecionada }}
                       key={categoria.id}
-                      onPress={() => atualizar("categoriaId", categoria.id as CategoriaId)}
+                      onPress={() => atualizar("categoriaId", categoria.id)}
                       style={({ pressed }) => [
                         styles.category,
                         conteudoEstreito ? styles.categoryNarrow : styles.categoryWide,
@@ -136,7 +250,7 @@ export default function NovoAnuncioScreen() {
                     >
                       <Ionicons
                         color={selecionada ? cores.acao : cores.textoSecundario}
-                        name={categoria.icon}
+                        name={obterIconeCategoria(categoria.nome)}
                         size={20}
                       />
                       <Text style={[styles.categoryText, selecionada ? styles.categoryTextSelected : null]}>
@@ -155,7 +269,7 @@ export default function NovoAnuncioScreen() {
               <CampoFormulario error={erros.descricao} icon="document-text-outline" label="Descrição">
                 <TextInput
                   accessibilityLabel="Descrição do anúncio"
-                  maxLength={1200}
+                  maxLength={5000}
                   multiline
                   onChangeText={(valor) => atualizar("descricao", valor)}
                   placeholder="Informe medidas, estado de conservação e detalhes para retirada."
@@ -219,6 +333,7 @@ export default function NovoAnuncioScreen() {
                   autoCorrect={false}
                   inputMode="url"
                   keyboardType="url"
+                  maxLength={2048}
                   onChangeText={(valor) => atualizar("imagemUrl", valor)}
                   onSubmitEditing={enviar}
                   placeholder="https://exemplo.com/material.jpg"
@@ -229,6 +344,133 @@ export default function NovoAnuncioScreen() {
                 />
               </CampoFormulario>
             </View>
+
+            {contexto && !contexto.endereco ? (
+              <View style={styles.section}>
+                <View style={styles.sectionHeading}>
+                  <View style={styles.stepBadge}>
+                    <Text style={styles.stepText}>3</Text>
+                  </View>
+                  <View style={styles.sectionHeadingText}>
+                    <Text style={styles.sectionTitle}>Local de retirada</Text>
+                    <Text style={styles.sectionSubtitle}>Este endereço ficará vinculado ao vendedor.</Text>
+                  </View>
+                </View>
+
+                <View style={styles.inlineFields}>
+                  <View style={styles.flexField}>
+                    <CampoFormulario error={errosEndereco.cep} icon="navigate-outline" label="CEP">
+                      <TextInput
+                        accessibilityLabel="CEP do endereço de retirada"
+                        inputMode="numeric"
+                        keyboardType="number-pad"
+                        maxLength={9}
+                        onChangeText={(valor) => atualizarEndereco("cep", formatarCep(valor))}
+                        placeholder="00000-000"
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="next"
+                        style={styles.input}
+                        value={dadosEndereco.cep}
+                      />
+                    </CampoFormulario>
+                  </View>
+                  <View style={styles.smallField}>
+                    <CampoFormulario error={errosEndereco.estado} icon="map-outline" label="UF">
+                      <TextInput
+                        accessibilityLabel="Estado do endereço de retirada"
+                        autoCapitalize="characters"
+                        maxLength={2}
+                        onChangeText={(valor) => atualizarEndereco("estado", valor.replace(/[^A-Za-z]/g, "").toUpperCase())}
+                        placeholder="TO"
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="next"
+                        style={styles.input}
+                        value={dadosEndereco.estado}
+                      />
+                    </CampoFormulario>
+                  </View>
+                </View>
+
+                <CampoFormulario error={errosEndereco.logradouro} icon="trail-sign-outline" label="Logradouro">
+                  <TextInput
+                    accessibilityLabel="Logradouro do endereço de retirada"
+                    autoCapitalize="words"
+                    maxLength={150}
+                    onChangeText={(valor) => atualizarEndereco("logradouro", valor)}
+                    placeholder="Ex.: Avenida Central"
+                    placeholderTextColor={cores.textoSuave}
+                    returnKeyType="next"
+                    style={styles.input}
+                    value={dadosEndereco.logradouro}
+                  />
+                </CampoFormulario>
+
+                <View style={styles.inlineFields}>
+                  <View style={styles.smallField}>
+                    <CampoFormulario error={errosEndereco.numero} icon="home-outline" label="Número">
+                      <TextInput
+                        accessibilityLabel="Número do endereço de retirada"
+                        maxLength={20}
+                        onChangeText={(valor) => atualizarEndereco("numero", valor)}
+                        placeholder="10"
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="next"
+                        style={styles.input}
+                        value={dadosEndereco.numero}
+                      />
+                    </CampoFormulario>
+                  </View>
+                  <View style={styles.flexField}>
+                    <CampoFormulario icon="business-outline" label="Complemento" optional>
+                      <TextInput
+                        accessibilityLabel="Complemento do endereço de retirada"
+                        maxLength={100}
+                        onChangeText={(valor) => atualizarEndereco("complemento", valor)}
+                        placeholder="Galpão, lote..."
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="next"
+                        style={styles.input}
+                        value={dadosEndereco.complemento}
+                      />
+                    </CampoFormulario>
+                  </View>
+                </View>
+
+                <View style={styles.inlineFields}>
+                  <View style={styles.flexField}>
+                    <CampoFormulario error={errosEndereco.bairro} icon="location-outline" label="Bairro">
+                      <TextInput
+                        accessibilityLabel="Bairro do endereço de retirada"
+                        autoCapitalize="words"
+                        maxLength={100}
+                        onChangeText={(valor) => atualizarEndereco("bairro", valor)}
+                        placeholder="Centro"
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="next"
+                        style={styles.input}
+                        value={dadosEndereco.bairro}
+                      />
+                    </CampoFormulario>
+                  </View>
+                  <View style={styles.flexField}>
+                    <CampoFormulario error={errosEndereco.cidade} icon="map-outline" label="Cidade">
+                      <TextInput
+                        accessibilityLabel="Cidade do endereço de retirada"
+                        autoCapitalize="words"
+                        maxLength={100}
+                        onChangeText={(valor) => atualizarEndereco("cidade", valor)}
+                        onSubmitEditing={enviar}
+                        placeholder="Palmas"
+                        placeholderTextColor={cores.textoSuave}
+                        returnKeyType="done"
+                        style={styles.input}
+                        value={dadosEndereco.cidade}
+                      />
+                    </CampoFormulario>
+                  </View>
+                </View>
+              </View>
+            ) : null}
 
             <View style={styles.preview}>
               <View style={styles.previewIcon}>
@@ -248,18 +490,36 @@ export default function NovoAnuncioScreen() {
             <View style={styles.localNotice}>
               <Ionicons color={cores.textoSecundario} name="information-circle-outline" size={20} />
               <Text style={styles.localNoticeText}>
-                Nesta etapa, o cadastro é validado no aplicativo. O envio à API será conectado com autenticação e endereço em uma próxima branch.
+                O usuário acima é um contexto temporário de desenvolvimento. Quando a autenticação entrar, ele será substituído pela sessão atual.
               </Text>
             </View>
 
+            {erroApi ? (
+              <View accessibilityLiveRegion="polite" style={styles.apiError}>
+                <Ionicons color={cores.erro} name="alert-circle-outline" size={20} />
+                <Text style={styles.apiErrorText}>{erroApi}</Text>
+              </View>
+            ) : null}
+
             <Pressable
-              accessibilityLabel="Concluir cadastro do anúncio"
+              accessibilityLabel="Publicar anúncio"
               accessibilityRole="button"
+              disabled={carregandoDados || !contexto || enviando}
               onPress={enviar}
-              style={({ pressed }) => [styles.submitButton, pressed ? styles.submitButtonPressed : null]}
+              style={({ pressed }) => [
+                styles.submitButton,
+                pressed ? styles.submitButtonPressed : null,
+                carregandoDados || !contexto || enviando ? styles.submitButtonDisabled : null,
+              ]}
             >
-              <Text style={styles.submitButtonText}>Concluir cadastro</Text>
-              <Ionicons color={cores.superficie} name="arrow-forward" size={21} />
+              {enviando ? (
+                <ActivityIndicator color={cores.superficie} />
+              ) : (
+                <>
+                  <Text style={styles.submitButtonText}>Publicar anúncio</Text>
+                  <Ionicons color={cores.superficie} name="arrow-forward" size={21} />
+                </>
+              )}
             </Pressable>
           </View>
         </ScrollView>
@@ -278,6 +538,23 @@ const styles = StyleSheet.create({
   eyebrowText: { color: cores.destaque, fontSize: 12, fontWeight: "800", letterSpacing: 1.2 },
   title: { color: cores.texto, fontSize: 34, lineHeight: 40, fontWeight: "800", letterSpacing: -1 },
   subtitle: { marginTop: 8, maxWidth: 560, color: cores.textoSecundario, fontSize: 17, lineHeight: 25 },
+  dependencyCard: {
+    marginBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.medio,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: cores.superficie,
+  },
+  dependencyCardError: { borderColor: "#E7B6B6", backgroundColor: cores.erroFundo },
+  dependencyText: { flex: 1, color: cores.textoSecundario, fontSize: 13, lineHeight: 19 },
+  dependencyTextError: { color: cores.erro },
+  dependencyStrong: { color: cores.texto, fontWeight: "800" },
+  retryText: { padding: 5, color: cores.acao, fontSize: 13, fontWeight: "800" },
   section: {
     marginBottom: 20,
     paddingHorizontal: 22,
@@ -325,6 +602,7 @@ const styles = StyleSheet.create({
   categoryError: { marginTop: -14, marginBottom: 18, color: cores.erro, fontSize: 12, lineHeight: 16 },
   inlineFields: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   flexField: { flex: 1 },
+  smallField: { width: "34%" },
   preview: {
     marginBottom: 14,
     padding: 18,
@@ -348,6 +626,17 @@ const styles = StyleSheet.create({
   previewMeta: { marginTop: 3, color: cores.textoSecundario, fontSize: 12, lineHeight: 17 },
   localNotice: { flexDirection: "row", alignItems: "flex-start", gap: 9, paddingHorizontal: 6 },
   localNoticeText: { flex: 1, color: cores.textoSecundario, fontSize: 12, lineHeight: 18 },
+  apiError: {
+    marginTop: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: raios.medio,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: cores.erroFundo,
+  },
+  apiErrorText: { flex: 1, color: cores.erro, fontSize: 13, lineHeight: 18 },
   submitButton: {
     height: 58,
     marginTop: 22,
@@ -364,5 +653,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonPressed: { backgroundColor: cores.acaoPressionada, transform: [{ scale: 0.995 }] },
+  submitButtonDisabled: { opacity: 0.55, shadowOpacity: 0 },
   submitButtonText: { color: cores.superficie, fontSize: 17, fontWeight: "800" },
 });

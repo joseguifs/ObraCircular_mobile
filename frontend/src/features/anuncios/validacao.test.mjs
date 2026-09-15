@@ -11,7 +11,7 @@ import {
 const anuncioValido = {
   titulo: "Sobras de piso cerâmico",
   descricao: "Quatro caixas fechadas que restaram da reforma.",
-  categoriaId: "pisos",
+  categoriaId: "10000000-0000-4000-8000-000000000003",
   preco: "R$ 120,00",
   quantidade: "4",
   imagemUrl: "https://example.com/piso.jpg",
@@ -22,7 +22,7 @@ test("aceita e normaliza um anúncio válido", () => {
   assert.deepEqual(normalizarAnuncio(anuncioValido), {
     titulo: "Sobras de piso cerâmico",
     descricao: "Quatro caixas fechadas que restaram da reforma.",
-    categoria_id: "pisos",
+    categoria_id: "10000000-0000-4000-8000-000000000003",
     preco: 120,
     quantidade: 4,
     imagem_url: "https://example.com/piso.jpg",
@@ -35,7 +35,7 @@ test("rejeita os campos obrigatórios inválidos", () => {
     descricao: "Pouca informação",
     categoriaId: "",
     preco: "",
-    quantidade: "0",
+    quantidade: "-1",
     imagemUrl: "arquivo-local.jpg",
   });
 
@@ -47,6 +47,10 @@ test("rejeita os campos obrigatórios inválidos", () => {
     "quantidade",
     "titulo",
   ]);
+});
+
+test("aceita estoque inicial zerado conforme o contrato da API", () => {
+  assert.deepEqual(validarAnuncio({ ...anuncioValido, quantidade: "0" }), {});
 });
 
 test("formata o preço digitado em centavos", () => {

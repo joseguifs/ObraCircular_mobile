@@ -1,10 +1,14 @@
-export const categorias = [
-  { id: "madeira", nome: "Madeira", icon: "leaf-outline" },
-  { id: "metais", nome: "Metais", icon: "construct-outline" },
-  { id: "pisos", nome: "Pisos e revestimentos", icon: "grid-outline" },
-  { id: "telhas", nome: "Telhas", icon: "home-outline" },
-  { id: "hidraulica", nome: "Louças e hidráulica", icon: "water-outline" },
-  { id: "outros", nome: "Outros", icon: "ellipsis-horizontal-outline" },
-] as const;
+import { Ionicons } from "@expo/vector-icons";
 
-export type CategoriaId = (typeof categorias)[number]["id"];
+const iconesPorNome: Record<string, keyof typeof Ionicons.glyphMap> = {
+  madeira: "leaf-outline",
+  metais: "construct-outline",
+  "pisos e revestimentos": "grid-outline",
+  telhas: "home-outline",
+  "louças e hidráulica": "water-outline",
+  outros: "ellipsis-horizontal-outline",
+};
+
+export function obterIconeCategoria(nome: string): keyof typeof Ionicons.glyphMap {
+  return iconesPorNome[nome.toLocaleLowerCase("pt-BR")] ?? "cube-outline";
+}

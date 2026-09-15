@@ -22,7 +22,9 @@ As telas e os layouts ficam em `src/app`, seguindo o roteamento baseado em arqui
 
 ## Cadastro de anúncio
 
-A tela está disponível em `/anuncios/novo` e também pode ser aberta pelo link na tela inicial. Nesta etapa, ela valida os dados e apresenta a confirmação local; a persistência será conectada quando o backend disponibilizar o contrato de criação e a autenticação fornecer vendedor e endereço.
+A tela está disponível em `/anuncios/novo` e também pode ser aberta pelo link na tela inicial. Ela carrega as categorias da API, valida os dados, cria um endereço quando o usuário ainda não possui um e publica o anúncio em `POST /api/v1/anuncios`.
+
+Como a autenticação ainda será implementada, o contexto de publicação é temporário. É possível definir `EXPO_PUBLIC_DEV_USUARIO_ID` e `EXPO_PUBLIC_DEV_ENDERECO_ID` no `.env`; sem essas variáveis, a aplicação usa o primeiro usuário ativo e o primeiro endereço encontrado para ele.
 
 ## Configurar a API
 
@@ -32,7 +34,7 @@ Copie `.env.example` para `.env` e ajuste `EXPO_PUBLIC_API_URL` conforme o ambie
 - iOS Simulator ou web: `http://localhost:8000`
 - Dispositivo físico: use o IP local do computador que executa o backend
 
-O cadastro de usuário envia os dados para `POST /api/v1/usuarios`.
+O cadastro de usuário envia os dados para `POST /api/v1/usuarios`, e o cadastro de anúncio usa os endpoints de usuários, endereços, categorias e anúncios do backend.
 
 ## Verificações
 
