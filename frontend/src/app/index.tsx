@@ -307,6 +307,20 @@ export default function CadastroScreen() {
                 Entrar
               </Link>
             </View>
+
+            <Link href="/anuncios/novo" asChild>
+              <Pressable
+                accessibilityLabel="Abrir cadastro de anúncio"
+                accessibilityRole="link"
+                style={({ pressed }) => [
+                  styles.adLink,
+                  pressed ? styles.adLinkPressed : null,
+                ]}
+              >
+                <Ionicons color="#176FD0" name="add-circle-outline" size={20} />
+                <Text style={styles.adLinkText}>Testar cadastro de anúncio</Text>
+              </Pressable>
+            </Link>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -399,4 +413,14 @@ const styles = StyleSheet.create({
   submitButtonPressed: { backgroundColor: "#0F5DB2", transform: [{ scale: 0.995 }] },
   submitButtonDisabled: { opacity: 0.58, shadowOpacity: 0 },
   submitButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "800" },
+  adLink: {
+    marginTop: 18,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  adLinkPressed: { opacity: 0.65 },
+  adLinkText: { color: "#176FD0", fontSize: 15, fontWeight: "700" },
 });
