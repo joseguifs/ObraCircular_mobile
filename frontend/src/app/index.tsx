@@ -322,6 +322,13 @@ export default function CadastroScreen() {
               )}
             </Pressable>
 
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Já tem conta?</Text>
+              <Link href="/login" style={styles.link}>
+                Entrar
+              </Link>
+            </View>
+
             <Link href="/anuncios/novo" asChild>
               <Pressable
                 accessibilityLabel="Abrir cadastro de anúncio"
@@ -395,6 +402,8 @@ const styles = StyleSheet.create({
   termsText: { flex: 1, color: "#64736C", fontSize: 15, lineHeight: 22 },
   link: { color: "#1A77D1" },
   termsError: { marginLeft: 41 },
+  footerRow: { marginTop: 22, flexDirection: "row", justifyContent: "center", gap: 6 },
+  footerText: { color: "#64736C", fontSize: 15, lineHeight: 22 },
   feedback: {
     marginTop: 16,
     borderRadius: 12,
