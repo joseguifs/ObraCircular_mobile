@@ -28,6 +28,8 @@ export function listarUsuarios(): Promise<Usuario[]> {
   return requisicaoApi<Usuario[]>("/api/v1/usuarios");
 }
 
+export function obterUsuario(usuarioId: string): Promise<Usuario> {
+  return requisicaoApi<Usuario>(`/api/v1/usuarios/${encodeURIComponent(usuarioId)}`);
 type LoginCredenciais = {
   email: string;
   senha: string;

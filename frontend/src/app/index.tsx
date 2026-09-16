@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { cadastrarUsuario } from "../services/usuarios";
+import { cadastrarUsuario, Usuario } from "../services/usuarios";
 
 type FormErrors = Partial<
   Record<"nome" | "email" | "senha" | "confirmarSenha" | "telefone" | "termos", string>
@@ -101,6 +101,7 @@ export default function CadastroScreen() {
   const [mensagemApi, setMensagemApi] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [sucesso, setSucesso] = useState(false);
+  const [usuarioCriado, setUsuarioCriado] = useState<Usuario | null>(null);
 
   async function enviarCadastro() {
     const novosErros = validarFormulario(
@@ -115,18 +116,20 @@ export default function CadastroScreen() {
     setErros(novosErros);
     setMensagemApi(null);
     setSucesso(false);
+    setUsuarioCriado(null);
 
     if (Object.keys(novosErros).length > 0) return;
 
     setEnviando(true);
     try {
-      await cadastrarUsuario({
+      const usuario = await cadastrarUsuario({
         nome: nome.trim().replace(/\s+/g, " "),
         email: email.trim().toLowerCase(),
         senha,
         telefone: telefone || null,
       });
       setSucesso(true);
+      setUsuarioCriado(usuario);
       setMensagemApi("Conta criada com sucesso!");
       setSenha("");
       setConfirmarSenha("");
@@ -281,6 +284,24 @@ export default function CadastroScreen() {
                 <Text style={[styles.feedbackText, sucesso ? styles.successText : styles.apiErrorText]}>
                   {mensagemApi}
                 </Text>
+                {usuarioCriado ? (
+                  <Link href={{ pathname: "/usuarios/[id]", params: { id: usuarioCriado.id } }} asChild>
+                    <Pressable
+                      accessibilityLabel="Ver o perfil da conta criada"
+                      accessibilityRole="link"
+                      hitSlop={8}
+                      style={styles.feedbackLink}
+                    >
+                      {/* Com asChild, estilo em função seria descartado pelo Link. */}
+                      {({ pressed }) => (
+                        <View style={[styles.feedbackLinkContent, pressed ? styles.adLinkPressed : null]}>
+                          <Text style={styles.feedbackLinkText}>Ver perfil</Text>
+                          <Ionicons color="#287A4B" name="arrow-forward" size={16} />
+                        </View>
+                      )}
+                    </Pressable>
+                  </Link>
+                ) : null}
               </View>
             ) : null}
 
@@ -395,6 +416,9 @@ const styles = StyleSheet.create({
   feedbackSuccess: { backgroundColor: "#EAF7EF" },
   feedbackError: { backgroundColor: "#FFF0F0" },
   feedbackText: { flex: 1, fontSize: 14, lineHeight: 19 },
+  feedbackLink: { minHeight: 40, paddingHorizontal: 6, justifyContent: "center" },
+  feedbackLinkContent: { flexDirection: "row", alignItems: "center", gap: 4 },
+  feedbackLinkText: { color: "#287A4B", fontSize: 14, fontWeight: "800" },
   successText: { color: "#287A4B" },
   apiErrorText: { color: "#A83A3A" },
   submitButton: {

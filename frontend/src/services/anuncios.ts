@@ -44,6 +44,10 @@ export function listarAnuncios(): Promise<Anuncio[]> {
   return requisicaoApi<Anuncio[]>("/api/v1/anuncios");
 }
 
+export function listarAnunciosDoVendedor(vendedorId: string): Promise<Anuncio[]> {
+  return requisicaoApi<Anuncio[]>(`/api/v1/anuncios?vendedor_id=${encodeURIComponent(vendedorId)}`);
+}
+
 export function obterAnuncio(anuncioId: string): Promise<Anuncio> {
   return requisicaoApi<Anuncio>(`/api/v1/anuncios/${encodeURIComponent(anuncioId)}`);
 }
