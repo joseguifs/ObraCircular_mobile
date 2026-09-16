@@ -263,6 +263,14 @@ A edição aceita `nome`, `email`, `senha`, `telefone` e `status` (`ATIVO`, `INA
 
 Consulta, edição e exclusão retornam 404 para UUIDs inexistentes ou usuários já excluídos. UUIDs e dados inválidos retornam 422. E-mails duplicados retornam 409, inclusive quando pertencem a usuários excluídos, conforme a restrição de unicidade do banco.
 
+### Autenticação
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/auth/login` | Autentica por e-mail e senha e retorna o usuário (200). |
+
+Credenciais inválidas ou usuário excluído retornam 401 com uma mensagem genérica, para não indicar qual campo está errado. Contas com status diferente de `ATIVO` retornam 403.
+
 Execute os testes dos endpoints com o ambiente virtual ativado, a partir de `backend`:
 
 ```powershell
