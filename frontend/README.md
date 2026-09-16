@@ -2,12 +2,14 @@
 
 Aplicativo mobile do ObraCircular, desenvolvido com Expo e React Native.
 
+O projeto usa Expo SDK 54 para manter a versão compartilhada pela equipe nos iPhones.
+
 ## Executar o projeto
 
 Instale as dependências:
 
 ```bash
-npm install
+npm ci
 ```
 
 Inicie o Expo:
