@@ -25,9 +25,25 @@ export type CriarEndereco = {
   estado: string;
 };
 
+export type AtualizarEndereco = Omit<CriarEndereco, "usuario_id">;
+
 export function cadastrarEndereco(dados: CriarEndereco): Promise<Endereco> {
   return requisicaoApi<Endereco>("/api/v1/enderecos", {
     method: "POST",
+    body: JSON.stringify(dados),
+  });
+}
+
+export function obterEndereco(enderecoId: string): Promise<Endereco> {
+  return requisicaoApi<Endereco>(`/api/v1/enderecos/${encodeURIComponent(enderecoId)}`);
+}
+
+export function atualizarEndereco(
+  enderecoId: string,
+  dados: AtualizarEndereco,
+): Promise<Endereco> {
+  return requisicaoApi<Endereco>(`/api/v1/enderecos/${encodeURIComponent(enderecoId)}`, {
+    method: "PATCH",
     body: JSON.stringify(dados),
   });
 }

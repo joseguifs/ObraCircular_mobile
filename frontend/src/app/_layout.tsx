@@ -23,6 +23,7 @@ export default function RootLayout() {
         <Stack.Screen name="anuncios/sucesso" options={{ headerShown: false }} />
         <Stack.Screen name="usuarios/[id]" options={{ title: "Perfil" }} />
         <Stack.Screen name="enderecos/novo" options={{ title: "Novo endereço" }} />
+        <Stack.Screen name="enderecos/[id]/editar" options={{ title: "Editar endereço" }} />
       </Stack>
     </SafeAreaProvider>
   );

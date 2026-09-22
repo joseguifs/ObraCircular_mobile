@@ -236,6 +236,51 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
       <View style={styles.secao}>
         <View style={styles.secaoCabecalho}>
           <Text accessibilityRole="header" style={styles.secaoTitulo}>
+            Endereços
+          </Text>
+          <Link href={{ pathname: "/enderecos/novo", params: { usuario_id: usuario.id } }} asChild>
+            <Pressable accessibilityLabel="Adicionar endereço" accessibilityRole="link" style={styles.acaoSecao}>
+              <Ionicons color={cores.acao} name="add" size={20} />
+              <Text style={styles.acaoSecaoTexto}>Adicionar</Text>
+            </Pressable>
+          </Link>
+        </View>
+
+        {enderecos.length === 0 ? (
+          <Text style={styles.enderecoVazio}>Nenhum endereço cadastrado.</Text>
+        ) : (
+          enderecos.map((endereco, indice) => (
+            <View
+              key={endereco.id}
+              style={[styles.enderecoLinha, indice > 0 ? styles.enderecoLinhaComBorda : null]}
+            >
+              <Ionicons color={cores.destaque} name="location-outline" size={22} />
+              <View style={styles.enderecoConteudo}>
+                <Text style={styles.enderecoPrincipal}>
+                  {endereco.logradouro}, {endereco.numero}
+                </Text>
+                <Text style={styles.enderecoDetalhe}>
+                  {endereco.bairro} · {endereco.cidade}/{endereco.estado} · CEP {endereco.cep.replace(/(\d{5})(\d{3})/, "$1-$2")}
+                </Text>
+              </View>
+              <Link href={{ pathname: "/enderecos/[id]/editar", params: { id: endereco.id } }} asChild>
+                <Pressable
+                  accessibilityLabel={`Editar endereço ${endereco.logradouro}`}
+                  accessibilityRole="link"
+                  hitSlop={8}
+                  style={styles.editarEndereco}
+                >
+                  <Ionicons color={cores.acao} name="create-outline" size={21} />
+                </Pressable>
+              </Link>
+            </View>
+          ))
+        )}
+      </View>
+
+      <View style={styles.secao}>
+        <View style={styles.secaoCabecalho}>
+          <Text accessibilityRole="header" style={styles.secaoTitulo}>
             Anúncios publicados
           </Text>
           <Text style={styles.secaoContador}>{resumo.total}</Text>
@@ -363,6 +408,15 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
+  acaoSecao: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6 },
+  acaoSecaoTexto: { color: cores.acao, fontSize: 14, lineHeight: 19, fontWeight: "800" },
+  enderecoVazio: { color: cores.textoSecundario, fontSize: 14, lineHeight: 20 },
+  enderecoLinha: { minHeight: 64, flexDirection: "row", alignItems: "center", gap: 12 },
+  enderecoLinhaComBorda: { borderTopWidth: 1, borderTopColor: cores.borda, paddingTop: 16 },
+  enderecoConteudo: { flex: 1, gap: 3 },
+  enderecoPrincipal: { color: cores.texto, fontSize: 15, lineHeight: 20, fontWeight: "700" },
+  enderecoDetalhe: { color: cores.textoSecundario, fontSize: 13, lineHeight: 19 },
+  editarEndereco: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: raios.pill },
   vazio: {
     paddingHorizontal: 16,
     paddingVertical: 22,
