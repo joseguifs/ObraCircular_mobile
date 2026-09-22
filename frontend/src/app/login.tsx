@@ -72,7 +72,7 @@ export default function LoginScreen() {
         email: email.trim().toLowerCase(),
         senha,
       });
-      router.replace({ pathname: "/home", params: { nome: usuario.nome } });
+      router.replace({ pathname: "/home", params: { nome: usuario.nome, usuarioId: usuario.id } });
     } catch (error) {
       setMensagemApi(error instanceof Error ? error.message : "Não foi possível entrar.");
     } finally {

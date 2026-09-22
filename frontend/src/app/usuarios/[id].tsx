@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useIsFocused } from "@react-navigation/native";
 import {
   ActivityIndicator,
   Pressable,
@@ -40,12 +41,13 @@ export default function PerfilUsuarioScreen() {
   const usuarioId = typeof id === "string" ? id : "";
   const idValido = ehIdentificadorValido(usuarioId);
   const [estado, setEstado] = useState<EstadoPerfil>({ situacao: "carregando" });
+  const emFoco = useIsFocused();
   const [recargas, setRecargas] = useState(0);
   const [atualizando, setAtualizando] = useState(false);
 
   useEffect(() => {
     // Um identificador fora do formato UUID não corresponde a nenhum usuário.
-    if (!idValido) return;
+    if (!idValido || !emFoco) return;
     let ativo = true;
 
     obterPerfilUsuario(usuarioId)
@@ -67,7 +69,7 @@ export default function PerfilUsuarioScreen() {
     return () => {
       ativo = false;
     };
-  }, [idValido, usuarioId, recargas]);
+  }, [idValido, usuarioId, recargas, emFoco]);
 
   function tentarNovamente() {
     setEstado({ situacao: "carregando" });
@@ -198,7 +200,7 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
   return (
     <>
       <View style={styles.cartaoPrincipal}>
-        <AvatarUsuario nome={usuario.nome} />
+        <AvatarUsuario nome={usuario.nome} imagemUrl={usuario.imagem_url} />
         <View style={styles.identificacao}>
           <Text accessibilityRole="header" style={styles.nome}>
             {usuario.nome}
@@ -207,6 +209,17 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
           <EtiquetaStatus rotulo={status.rotulo} tom={status.tom} />
         </View>
       </View>
+
+      <Link href={{ pathname: "/usuarios/[id]/editar", params: { id: usuario.id } }} asChild>
+        <Pressable accessibilityRole="link" style={styles.linkEditar}>
+          {({ pressed }) => (
+            <View style={[styles.botao, pressed ? styles.botaoPressionado : null]}>
+              <Ionicons color={cores.superficie} name="create-outline" size={19} />
+              <Text style={styles.botaoTexto}>Editar dados</Text>
+            </View>
+          )}
+        </Pressable>
+      </Link>
 
       <View style={styles.estatisticas}>
         <Estatistica rotulo="Anúncios" valor={resumo.total} />
@@ -275,6 +288,7 @@ const styles = StyleSheet.create({
   botaoInicio: { marginLeft: 8, padding: 8, borderRadius: raios.pill },
   pressionado: { opacity: 0.65 },
   link: { marginTop: 8 },
+  linkEditar: { width: "100%" },
   aviso: {
     marginTop: 10,
     paddingHorizontal: 24,
