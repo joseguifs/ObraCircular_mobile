@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.models.enums import StatusUsuario
+from app.schemas.imagem import normalizar_imagem
 
 
 class UsuarioCriacao(BaseModel):
@@ -105,6 +106,12 @@ class UsuarioAtualizacao(UsuarioCriacao):
     email: EmailStr | None = Field(default=None, max_length=255)
     senha: str | None = Field(default=None, min_length=8, max_length=72)
     status: StatusUsuario | None = None
+    imagem_url: str | None = Field(default=None, max_length=7_000_000)
+
+    @field_validator("imagem_url")
+    @classmethod
+    def validar_imagem(cls, imagem: str | None) -> str | None:
+        return normalizar_imagem(imagem)
 
     @model_validator(mode="before")
     @classmethod
@@ -123,6 +130,7 @@ class UsuarioResposta(BaseModel):
     nome: str
     email: EmailStr
     telefone: str | None
+    imagem_url: str | None = None
     status: StatusUsuario
     criado_em: datetime
     atualizado_em: datetime

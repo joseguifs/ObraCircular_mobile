@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Index, String, func, text
+from sqlalchemy import CheckConstraint, DateTime, Index, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,6 +39,7 @@ class Usuario(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     telefone: Mapped[str | None] = mapped_column(String(20))
+    imagem_url: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'ATIVO'")
     )

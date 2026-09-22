@@ -89,6 +89,33 @@ class UsuariosEndpointsTest(unittest.TestCase):
         usuarios = self.client.get("/api/v1/usuarios").json()
         self.assertNotIn(str(self.usuario_id), [item["id"] for item in usuarios])
 
+    def test_imagem_ciclo_e_atomicidade(self):
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        arquivo = BytesIO()
+        Image.new("RGB", (800, 600), "blue").save(arquivo, "PNG")
+        imagem = "data:image/png;base64," + base64.b64encode(arquivo.getvalue()).decode()
+        self.assertEqual(self.client.patch(self.url, json={"email": "outro@example.com", "imagem_url": imagem}).status_code, 409)
+        self.assertIsNone(self.client.get(self.url).json()["imagem_url"])
+        resposta = self.client.patch(self.url, json={"imagem_url": imagem})
+        self.assertEqual(resposta.status_code, 200)
+        salva = resposta.json()["imagem_url"]
+        with Image.open(BytesIO(base64.b64decode(salva.split(",")[1]))) as foto:
+            self.assertEqual(foto.size, (512, 384))
+        self.client.patch(self.url, json={"nome": "Maria Foto"})
+        self.assertEqual(self.client.get(self.url).json()["imagem_url"], salva)
+        self.assertIsNone(self.client.patch(self.url, json={"imagem_url": None}).json()["imagem_url"])
+
+    def test_imagem_invalida_nao_altera_dados(self):
+        for imagem in ("https://example.com/foto.jpg", "data:image/png;base64,abc!",
+                       "data:image/png;base64,YWJj", "data:image/svg+xml;base64,YWJj",
+                       "data:image/png;base64," + "A" * 7_000_000):
+            with self.subTest(tamanho=len(imagem)):
+                resposta = self.client.patch(self.url, json={"nome": "Nome Modificado", "imagem_url": imagem})
+                self.assertEqual(resposta.status_code, 422)
+        self.assertEqual(self.client.get(self.url).json()["nome"], "Maria Silva")
+
 
 if __name__ == "__main__":
     unittest.main()
