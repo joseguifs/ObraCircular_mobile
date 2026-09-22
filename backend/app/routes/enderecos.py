@@ -10,9 +10,30 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.endereco import Endereco
 from app.models.usuario import Usuario
-from app.schemas.endereco import EnderecoCreate, EnderecoRead
+from app.schemas.endereco import EnderecoCreate, EnderecoRead, EnderecoUpdate
 
 router = APIRouter()
+
+
+def obter_endereco(endereco_id: uuid.UUID, db: Session) -> Endereco:
+    endereco = db.get(Endereco, endereco_id)
+    if endereco is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Endereço não encontrado",
+        )
+    return endereco
+
+
+def salvar(db: Session) -> None:
+    try:
+        db.commit()
+    except IntegrityError as erro:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Não foi possível salvar o endereço. Verifique os dados enviados.",
+        ) from erro
 
 
 @router.post(
@@ -36,14 +57,7 @@ def cadastrar_endereco(
     endereco = Endereco(**dados.model_dump())
     db.add(endereco)
 
-    try:
-        db.commit()
-    except IntegrityError as erro:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Não foi possível cadastrar o endereço. Verifique os dados enviados.",
-        ) from erro
+    salvar(db)
 
     db.refresh(endereco)
     return endereco
@@ -58,12 +72,26 @@ def buscar_endereco(
     endereco_id: uuid.UUID,
     db: Session = Depends(get_db),
 ) -> Endereco:
-    endereco = db.get(Endereco, endereco_id)
-    if endereco is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Endereço não encontrado",
-        )
+    return obter_endereco(endereco_id, db)
+
+
+@router.patch(
+    "/{endereco_id}",
+    response_model=EnderecoRead,
+    summary="Editar endereço",
+)
+def editar_endereco(
+    endereco_id: uuid.UUID,
+    dados: EnderecoUpdate,
+    db: Session = Depends(get_db),
+) -> Endereco:
+    endereco = obter_endereco(endereco_id, db)
+
+    for campo, valor in dados.model_dump(exclude_unset=True).items():
+        setattr(endereco, campo, valor)
+
+    salvar(db)
+    db.refresh(endereco)
     return endereco
 
 

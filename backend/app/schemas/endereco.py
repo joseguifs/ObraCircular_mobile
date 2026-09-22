@@ -4,7 +4,7 @@ import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _NAO_DIGITO = re.compile(r"\D")
 
@@ -67,6 +67,28 @@ class EnderecoBase(BaseModel):
 class EnderecoCreate(EnderecoBase):
 
     usuario_id: uuid.UUID
+
+
+class EnderecoUpdate(EnderecoBase):
+
+    model_config = ConfigDict(extra="forbid")
+
+    cep: str | None = Field(default=None)
+    logradouro: str | None = Field(default=None, min_length=1, max_length=150)
+    numero: str | None = Field(default=None, min_length=1, max_length=20)
+    complemento: str | None = Field(default=None, max_length=100)
+    bairro: str | None = Field(default=None, min_length=1, max_length=100)
+    cidade: str | None = Field(default=None, min_length=1, max_length=100)
+    estado: str | None = Field(default=None, min_length=2, max_length=2)
+
+    @model_validator(mode="before")
+    @classmethod
+    def rejeitar_nulos_obrigatorios(cls, dados: object) -> object:
+        if isinstance(dados, dict):
+            for campo in ("cep", "logradouro", "numero", "bairro", "cidade", "estado"):
+                if campo in dados and dados[campo] is None:
+                    raise ValueError(f"o campo {campo} não pode ser nulo")
+        return dados
 
 
 class EnderecoRead(EnderecoBase):
