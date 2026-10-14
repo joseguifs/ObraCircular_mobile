@@ -46,3 +46,17 @@ def verificar_senha(senha: str, senha_hash: str) -> bool:
     )
 
     return hmac.compare_digest(hash_calculado.hex(), hash_hex)
+
+
+def gerar_token_sessao() -> str:
+    """Gera um token aleatório para ser entregue uma única vez ao cliente."""
+    return secrets.token_urlsafe(32)
+
+
+def gerar_hash_token(token: str) -> str:
+    """
+    Calcula o hash armazenado da sessão.
+
+    O token tem alta entropia, então SHA-256 basta e permite a busca direta.
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()

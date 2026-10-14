@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: str
     cors_origins: str = "http://localhost:8081,http://127.0.0.1:8081"
+    admin_sessao_horas: int = 8
 
     @property
     def cors_origins_list(self) -> list[str]:

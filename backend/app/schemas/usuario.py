@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
-from app.models.enums import StatusUsuario
+from app.models.enums import PapelUsuario, StatusUsuario
 from app.schemas.imagem import normalizar_imagem
 
 
@@ -132,5 +132,6 @@ class UsuarioResposta(BaseModel):
     telefone: str | None
     imagem_url: str | None = None
     status: StatusUsuario
+    papel: PapelUsuario = PapelUsuario.USUARIO
     criado_em: datetime
     atualizado_em: datetime

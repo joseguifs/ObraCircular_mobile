@@ -16,3 +16,8 @@ class StatusAnuncio(StrEnum):
     ATIVO = "ATIVO"
     ESGOTADO = "ESGOTADO"
     ENCERRADO = "ENCERRADO"
+
+
+class PapelUsuario(StrEnum):
+    USUARIO = "USUARIO"
+    ADMIN = "ADMIN"

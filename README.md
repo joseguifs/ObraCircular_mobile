@@ -271,6 +271,38 @@ Consulta, edição e exclusão retornam 404 para UUIDs inexistentes ou usuários
 
 Credenciais inválidas ou usuário excluído retornam 401 com uma mensagem genérica, para não indicar qual campo está errado. Contas com status diferente de `ATIVO` retornam 403.
 
+### Administração
+
+O painel administrativo usa o papel do usuário (`usuarios.papel`: `USUARIO` ou `ADMIN`) e sessões próprias na tabela `sessoes_admin`, que guarda apenas o hash SHA-256 do token. Para criar o primeiro administrador, cadastre o usuário normalmente e promova-o pela linha de comando, a partir de `backend`:
+
+```powershell
+python -m app.scripts.promover_admin email@exemplo.com
+# para remover o papel: python -m app.scripts.promover_admin email@exemplo.com --remover
+```
+
+`POST /api/v1/admin/login` devolve um token que deve ser enviado nas demais rotas como `Authorization: Bearer <token>`. A sessão expira após `ADMIN_SESSAO_HORAS` (padrão: 8). Papel e status são conferidos a cada requisição, então rebaixar ou bloquear um admin encerra o acesso na hora.
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/admin/login` | Autentica um admin ativo e cria a sessão (200). Usuário comum recebe 403. |
+| POST | `/api/v1/admin/logout` | Revoga o token atual (204). |
+| GET | `/api/v1/admin/me` | Retorna o admin logado. |
+| GET | `/api/v1/admin/resumo` | Totais de usuários, anúncios e categorias por status. |
+| GET | `/api/v1/admin/usuarios` | Lista usuários; filtros `busca`, `status`, `papel`, `incluir_excluidos`, `limite`. |
+| PATCH | `/api/v1/admin/usuarios/{id}` | Altera `status` e/ou `papel`. |
+| DELETE | `/api/v1/admin/usuarios/{id}` | Exclusão lógica (204). |
+| POST | `/api/v1/admin/usuarios/{id}/restaurar` | Desfaz a exclusão lógica. |
+| GET | `/api/v1/admin/anuncios` | Lista anúncios de todos os vendedores; filtros `busca`, `status`, `categoria_id`, `vendedor_id`, `incluir_excluidos`. |
+| PATCH | `/api/v1/admin/anuncios/{id}` | Encerra (`ENCERRADO`) ou reativa (`ATIVO`) o anúncio. |
+| DELETE | `/api/v1/admin/anuncios/{id}` | Exclusão lógica (204). |
+| POST | `/api/v1/admin/anuncios/{id}/restaurar` | Desfaz a exclusão lógica. |
+| GET | `/api/v1/admin/categorias` | Lista todas as categorias, inclusive inativas, com `total_anuncios`. |
+| POST | `/api/v1/admin/categorias` | Cria categoria (201; 409 se o nome já existir). |
+| PATCH | `/api/v1/admin/categorias/{id}` | Edita `nome`, `descricao` e `status`. |
+| DELETE | `/api/v1/admin/categorias/{id}` | Exclui somente categorias sem anúncios; as demais retornam 409 e devem ser inativadas. |
+
+O admin não pode alterar o status, o papel nem excluir a própria conta pelo painel (409). No app, o painel fica em `/admin/login`, e a tela inicial mostra o atalho "Painel administrativo" para usuários com papel `ADMIN`.
+
 Execute os testes dos endpoints com o ambiente virtual ativado, a partir de `backend`:
 
 ```powershell
