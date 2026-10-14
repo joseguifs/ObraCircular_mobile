@@ -3,6 +3,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { StatusProjeto } from "@/components/StatusProjeto";
+
 export default function HomeScreen() {
   const { nome } = useLocalSearchParams<{ nome?: string }>();
   const router = useRouter();
@@ -20,15 +22,9 @@ export default function HomeScreen() {
         <Text style={styles.title}>
           {nome ? `Bem-vindo(a), ${nome}!` : "Bem-vindo(a)!"}
         </Text>
-        <View
-          accessibilityLabel="Projeto ativo e em desenvolvimento"
-          accessibilityRole="text"
-          style={styles.projectStatus}
-        >
-          <View style={styles.projectStatusDot} />
-          <Text style={styles.projectStatusText}>Projeto ativo</Text>
-        </View>
         <Text style={styles.subtitle}>Você entrou na ObraCircular.</Text>
+
+        <StatusProjeto />
 
         <Pressable
           accessibilityRole="button"
@@ -57,17 +53,6 @@ const styles = StyleSheet.create({
   },
   logoLetter: { color: "#2382DC", fontSize: 38, lineHeight: 43, fontWeight: "500" },
   title: { color: "#071E2F", fontSize: 24, fontWeight: "800", textAlign: "center" },
-  projectStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#EAF7EF",
-  },
-  projectStatusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#287A4B" },
-  projectStatusText: { color: "#287A4B", fontSize: 14, fontWeight: "700" },
   subtitle: { color: "#718078", fontSize: 16, textAlign: "center" },
   logoutButton: {
     marginTop: 26,
