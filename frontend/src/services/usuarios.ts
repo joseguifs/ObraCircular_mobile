@@ -7,13 +7,17 @@ type CadastroUsuario = {
   telefone: string | null;
 };
 
+export type StatusUsuario = "ATIVO" | "INATIVO" | "BLOQUEADO";
+export type PapelUsuario = "USUARIO" | "ADMIN";
+
 export type Usuario = {
   id: string;
   nome: string;
   email: string;
   telefone: string | null;
   imagem_url: string | null;
-  status: "ATIVO" | "INATIVO" | "BLOQUEADO";
+  status: StatusUsuario;
+  papel: PapelUsuario;
   criado_em: string;
   atualizado_em: string;
 };
