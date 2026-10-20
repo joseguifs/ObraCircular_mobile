@@ -190,6 +190,7 @@ function BotaoInicio() {
 }
 
 function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
+  const router = useRouter();
   const { usuario, enderecos, anuncios } = perfil;
   const status = descreverStatusUsuario(usuario.status);
   const membroDesde = formatarMembroDesde(usuario.criado_em);
@@ -266,6 +267,15 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
           anuncios.map((anuncio) => <ItemAnuncioPerfil anuncio={anuncio} key={anuncio.id} />)
         )}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.replace("/login")}
+        style={({ pressed }) => [styles.botaoSair, pressed ? styles.botaoSairPressionado : null]}
+      >
+        <Ionicons color={cores.erro} name="log-out-outline" size={19} />
+        <Text style={styles.botaoSairTexto}>Sair da conta</Text>
+      </Pressable>
     </>
   );
 }
@@ -390,4 +400,17 @@ const styles = StyleSheet.create({
   },
   vazioTitulo: { color: cores.texto, fontSize: 15, lineHeight: 20, fontWeight: "800", textAlign: "center" },
   vazioTexto: { color: cores.textoSecundario, fontSize: 13, lineHeight: 19, textAlign: "center" },
+  botaoSair: {
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.grande,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: cores.superficie,
+  },
+  botaoSairPressionado: { backgroundColor: cores.erroFundo },
+  botaoSairTexto: { color: cores.erro, fontSize: 15, fontWeight: "700" },
 });
