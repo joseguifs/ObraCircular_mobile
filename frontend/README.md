@@ -34,6 +34,13 @@ A tela fica em `src/app/usuarios/[id].tsx` e responde em `/usuarios/<uuid do usu
 
 Ela consulta `GET /api/v1/usuarios/{id}`, `GET /api/v1/enderecos/usuario/{id}` e `GET /api/v1/anuncios?vendedor_id={id}`, e mostra nome, situação da conta, contato, cidades dos endereços e anúncios publicados. Os estados de carregamento, falha com nova tentativa, perfil inexistente (incluindo identificador fora do formato UUID) e ausência de anúncios são tratados na própria tela. No celular, puxar a tela para baixo recarrega os dados.
 
+### Filtros de anúncios
+
+Na seção **Anúncios publicados** do perfil, use **Todos**, **Ativos** ou **Finalizados**
+para filtrar a lista. O contador acompanha o filtro selecionado, e os indicadores
+do perfil continuam mostrando os totais gerais. A filtragem usa os dados já carregados,
+sem novas chamadas à API. Anúncios esgotados e encerrados entram em **Finalizados**.
+
 ## Edição dos dados básicos do usuário
 
 No perfil, toque em **Editar dados** para abrir `/usuarios/<uuid>/editar`.

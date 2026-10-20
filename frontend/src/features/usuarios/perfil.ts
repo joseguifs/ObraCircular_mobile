@@ -97,6 +97,13 @@ export function resumirAnuncios(anuncios: { status: string }[]) {
   return { total: anuncios.length, ativos, finalizados: anuncios.length - ativos };
 }
 
+export type FiltroAnuncios = "todos" | "ativos" | "finalizados";
+
+export function filtrarAnuncios<T extends { status: string }>(anuncios: T[], filtro: FiltroAnuncios): T[] {
+  if (filtro === "todos") return anuncios;
+  return anuncios.filter((anuncio) => (anuncio.status === "ATIVO") === (filtro === "ativos"));
+}
+
 export function resumirLocalizacao(enderecos: { cidade: string; estado: string }[]) {
   const cidades = [...new Set(enderecos.map((endereco) => `${endereco.cidade}/${endereco.estado}`))];
   return cidades.length > 0 ? cidades.join(" · ") : null;
