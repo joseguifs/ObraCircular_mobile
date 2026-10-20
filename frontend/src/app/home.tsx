@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BarraAbas } from "@/components/BarraAbas";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
+import { correspondeBusca } from "@/features/anuncios/busca";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -68,13 +69,10 @@ export default function HomeScreen() {
   }
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
-  const termo = busca.trim().toLocaleLowerCase("pt-BR");
   const listaFiltrada = anuncios.filter((anuncio) => {
     if (anuncio.status !== "ATIVO") return false;
     if (categoriaSelecionada && anuncio.categoria_id !== categoriaSelecionada) return false;
-    if (!termo) return true;
-    const nomeCategoria = categoriaPorId.get(anuncio.categoria_id)?.nome ?? "";
-    return `${anuncio.titulo} ${nomeCategoria}`.toLocaleLowerCase("pt-BR").includes(termo);
+    return correspondeBusca([anuncio.titulo, categoriaPorId.get(anuncio.categoria_id)?.nome], busca);
   });
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
