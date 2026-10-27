@@ -8,6 +8,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BarraAbas } from "@/components/BarraAbas";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
+import { FiltrosVitrine } from "@/components/FiltrosVitrine";
+import { FILTROS_INICIAIS, filtrarVitrine } from "@/features/anuncios/vitrine";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -25,8 +27,12 @@ export default function HomeScreen() {
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string | null>(null);
-  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
+  const { busca, categoriaId: categoriaSelecionada } = filtros;
+
+  function atualizarFiltros(alteracoes: Partial<typeof filtros>) {
+    setFiltros((atuais) => ({ ...atuais, ...alteracoes }));
+  }
 
   useFocusEffect(useCallback(() => {
     if (!idValido) return;
@@ -56,8 +62,7 @@ export default function HomeScreen() {
   }, [carregarVitrine]));
 
   function limparFiltros() {
-    setCategoriaSelecionada(null);
-    setBusca("");
+    setFiltros(FILTROS_INICIAIS);
   }
 
   function abrirAnuncio(anuncio: Anuncio) {
@@ -68,14 +73,7 @@ export default function HomeScreen() {
   }
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
-  const termo = busca.trim().toLocaleLowerCase("pt-BR");
-  const listaFiltrada = anuncios.filter((anuncio) => {
-    if (anuncio.status !== "ATIVO") return false;
-    if (categoriaSelecionada && anuncio.categoria_id !== categoriaSelecionada) return false;
-    if (!termo) return true;
-    const nomeCategoria = categoriaPorId.get(anuncio.categoria_id)?.nome ?? "";
-    return `${anuncio.titulo} ${nomeCategoria}`.toLocaleLowerCase("pt-BR").includes(termo);
-  });
+  const { anuncios: listaFiltrada, erroPreco } = filtrarVitrine(anuncios, categorias, filtros);
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
   const resumoBusca = listaFiltrada.length
@@ -96,8 +94,8 @@ export default function HomeScreen() {
               <Ionicons color="#9FB2C9" name="search" size={17} />
               <TextInput
                 accessibilityLabel="Buscar anúncios"
-                onChangeText={setBusca}
-                placeholder="Buscar materiais, categorias…"
+                onChangeText={(valor) => atualizarFiltros({ busca: valor })}
+                placeholder="Buscar materiais, descrições, categorias…"
                 placeholderTextColor="#9FB2C9"
                 returnKeyType="search"
                 style={styles.buscaInput}
@@ -109,7 +107,7 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       <View style={styles.corpo}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <ScrollView
             contentContainerStyle={styles.categorias}
             horizontal
@@ -118,25 +116,27 @@ export default function HomeScreen() {
             <Chip
               ativo={categoriaSelecionada === null}
               nome="Todos"
-              onPress={() => setCategoriaSelecionada(null)}
+              onPress={() => atualizarFiltros({ categoriaId: null })}
             />
             {categorias.map((categoria) => (
               <Chip
                 ativo={categoriaSelecionada === categoria.id}
                 key={categoria.id}
                 nome={categoria.nome}
-                onPress={() => setCategoriaSelecionada(categoria.id)}
+                onPress={() => atualizarFiltros({ categoriaId: categoria.id })}
               />
             ))}
           </ScrollView>
 
+          <FiltrosVitrine erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
+
           <View style={styles.secaoCabecalho}>
             <Text accessibilityRole="header" style={styles.secaoTitulo}>Perto de você</Text>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
-              <Text style={styles.verTodos}>Ver todos</Text>
+              <Text style={styles.verTodos}>Limpar filtros</Text>
             </Pressable>
           </View>
-          <Text style={styles.resumo}>{resumoBusca}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.resumo}>{erroPreco ? "Revise a faixa de preço para ver os anúncios" : resumoBusca}</Text>
 
           {carregando ? (
             <View style={styles.aviso}>
@@ -155,10 +155,18 @@ export default function HomeScreen() {
                 <Text style={styles.botaoTentarTexto}>Tentar novamente</Text>
               </Pressable>
             </View>
+          ) : erroPreco ? (
+            <View style={styles.vazio}>
+              <Text style={styles.vazioTitulo}>Revise a faixa de preço</Text>
+              <Text style={styles.vazioTexto}>{erroPreco}</Text>
+            </View>
           ) : listaFiltrada.length === 0 ? (
             <View style={styles.vazio}>
               <Text style={styles.vazioTitulo}>Nenhum anúncio encontrado</Text>
-              <Text style={styles.vazioTexto}>Ajuste a busca ou escolha outra categoria.</Text>
+              <Text style={styles.vazioTexto}>Ajuste a busca, a categoria ou os filtros de preço.</Text>
+              <Pressable accessibilityRole="button" onPress={limparFiltros} style={styles.botaoTentar}>
+                <Text style={styles.botaoTentarTexto}>Limpar filtros</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={styles.lista}>
