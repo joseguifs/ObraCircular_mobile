@@ -271,6 +271,24 @@ Consulta, edição e exclusão retornam 404 para UUIDs inexistentes ou usuários
 
 Credenciais inválidas ou usuário excluído retornam 401 com uma mensagem genérica, para não indicar qual campo está errado. Contas com status diferente de `ATIVO` retornam 403.
 
+### Perguntas e respostas dos anúncios
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| GET | `/api/v1/anuncios/{anuncio_id}/perguntas?offset=0&limit=20` | Lista as perguntas do anúncio, da mais recente para a mais antiga (200). |
+| POST | `/api/v1/anuncios/{anuncio_id}/perguntas` | Envia `autor_id` e `pergunta` e cria a pergunta (201). |
+| POST | `/api/v1/anuncios/{anuncio_id}/perguntas/{pergunta_id}/resposta` | Envia `vendedor_id` e `resposta` e registra a resposta do vendedor (200). |
+
+A listagem é pública e retorna `items`, `total`, `offset` e `limit` (`limit` vai de 1 a 50). Quem perguntou aparece apenas pelo `autor_id`.
+
+- A pergunta tem de 3 a 500 caracteres e a resposta de 1 a 1000, sem contar espaços nas pontas (422 fora disso).
+- Somente usuários `ATIVO` perguntam ou respondem (403).
+- O vendedor não pode perguntar no próprio anúncio (403) e só ele pode responder (403).
+- Anúncios `ATIVO` e `ESGOTADO` recebem perguntas. Anúncios `ENCERRADO` retornam 400, e anúncios inexistentes ou excluídos retornam 404.
+- Cada pergunta aceita uma única resposta. Uma segunda resposta retorna 409, e uma pergunta de outro anúncio retorna 404.
+
+A tabela `anuncio_perguntas` é criada pela migration `20261027_0004`. Depois de atualizar o código, rode `python -m alembic upgrade head`.
+
 Execute os testes dos endpoints com o ambiente virtual ativado, a partir de `backend`:
 
 ```powershell
