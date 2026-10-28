@@ -37,6 +37,10 @@ export function validarAnuncio(dados: DadosFormularioAnuncio): ErrosFormularioAn
   else if (descricao.length > 5000) erros.descricao = "A descrição deve ter no máximo 5.000 caracteres.";
   if (!dados.categoriaId) erros.categoriaId = "Selecione uma categoria.";
   if (!dados.preco.trim()) erros.preco = "Informe o preço, mesmo que seja R$ 0,00.";
+  // A API aceita 12 dígitos no total, sendo 2 casas decimais.
+  else if (moedaParaCentavos(dados.preco) > 999_999_999_999) {
+    erros.preco = "O preço deve ser de no máximo R$ 9.999.999.999,99.";
+  }
   if (!/^\d+$/.test(dados.quantidade) || !Number.isInteger(quantidade) || quantidade < 0) {
     erros.quantidade = "Informe uma quantidade inteira a partir de 0.";
   }

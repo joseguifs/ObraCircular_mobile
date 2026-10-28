@@ -57,3 +57,31 @@ test("formata o preço digitado em centavos", () => {
   assert.equal(moedaParaCentavos("R$ 1.234,56"), 123456);
   assert.match(formatarMoeda("123456"), /1\.234,56/);
 });
+
+test("aceita doações e o maior preço permitido pela API", () => {
+  for (const preco of ["R$ 0,00", "R$ 9.999.999.999,99"]) {
+    assert.deepEqual(validarAnuncio({ ...anuncioValido, preco }), {});
+  }
+  assert.equal(
+    normalizarAnuncio({ ...anuncioValido, preco: "R$ 9.999.999.999,99" }).preco,
+    9999999999.99,
+  );
+});
+
+test("rejeita preços acima do limite da API, inclusive valores muito grandes", () => {
+  for (const preco of ["R$ 10.000.000.000,00", "9".repeat(400)]) {
+    assert.equal(
+      validarAnuncio({ ...anuncioValido, preco }).preco,
+      "O preço deve ser de no máximo R$ 9.999.999.999,99.",
+    );
+  }
+});
+
+test("continua exigindo preço preenchido, mesmo quando aceita doações", () => {
+  for (const preco of ["", "   "]) {
+    assert.equal(
+      validarAnuncio({ ...anuncioValido, preco }).preco,
+      "Informe o preço, mesmo que seja R$ 0,00.",
+    );
+  }
+});
