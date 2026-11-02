@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.routes import admin, anuncios, auth, categorias, enderecos, health, usuarios
+from app.routes import anuncio_perguntas, anuncios, auth, categorias, enderecos, health, usuarios
 
 
 api_router = APIRouter()
@@ -11,3 +12,8 @@ api_router.include_router(categorias.router, prefix="/api/v1/categorias", tags=[
 api_router.include_router(enderecos.router, prefix="/api/v1/enderecos", tags=["Enderecos"])
 api_router.include_router(anuncios.router, prefix="/api/v1/anuncios", tags=["Anuncios"])
 api_router.include_router(admin.router, prefix="/api/v1/admin", tags=["Administracao"])
+api_router.include_router(
+    anuncio_perguntas.router,
+    prefix="/api/v1/anuncios",
+    tags=["Perguntas dos anuncios"],
+)

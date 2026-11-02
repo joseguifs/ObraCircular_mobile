@@ -21,6 +21,8 @@ import { Marca } from "@/components/Marca";
 import {
   descreverStatusUsuario,
   ehIdentificadorValido,
+  filtrarAnuncios,
+  FiltroAnuncios,
   formatarMembroDesde,
   formatarTelefone,
   resumirAnuncios,
@@ -157,7 +159,7 @@ export default function PerfilUsuarioScreen() {
               </Pressable>
             </View>
           ) : estado.situacao === "pronto" ? (
-            <ConteudoPerfil perfil={estado.perfil} />
+            <ConteudoPerfil key={usuarioId} perfil={estado.perfil} />
           ) : null}
         </View>
       </ScrollView>
@@ -190,12 +192,20 @@ function BotaoInicio() {
 }
 
 function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
+  const router = useRouter();
   const { usuario, enderecos, anuncios } = perfil;
+  const [filtro, setFiltro] = useState<FiltroAnuncios>("todos");
   const status = descreverStatusUsuario(usuario.status);
   const membroDesde = formatarMembroDesde(usuario.criado_em);
   const telefone = formatarTelefone(usuario.telefone);
   const localizacao = resumirLocalizacao(enderecos);
   const resumo = resumirAnuncios(anuncios);
+  const anunciosFiltrados = filtrarAnuncios(anuncios, filtro);
+  const filtros: { valor: FiltroAnuncios; rotulo: string }[] = [
+    { valor: "todos", rotulo: "Todos" },
+    { valor: "ativos", rotulo: "Ativos" },
+    { valor: "finalizados", rotulo: "Finalizados" },
+  ];
 
   return (
     <>
@@ -251,8 +261,37 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
           <Text accessibilityRole="header" style={styles.secaoTitulo}>
             Anúncios publicados
           </Text>
-          <Text style={styles.secaoContador}>{resumo.total}</Text>
+          <Text
+            accessibilityLabel={`${anunciosFiltrados.length} anúncios exibidos`}
+            accessibilityLiveRegion="polite"
+            style={styles.secaoContador}
+          >
+            {anunciosFiltrados.length}
+          </Text>
         </View>
+
+        {anuncios.length > 0 ? (
+          <View style={styles.filtros}>
+            {filtros.map(({ valor, rotulo }) => (
+              <Pressable
+                accessibilityLabel={`Filtrar anúncios: ${rotulo}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: filtro === valor }}
+                key={valor}
+                onPress={() => setFiltro(valor)}
+                style={({ pressed }) => [
+                  styles.filtro,
+                  filtro === valor ? styles.filtroSelecionado : null,
+                  pressed ? styles.pressionado : null,
+                ]}
+              >
+                <Text style={[styles.filtroTexto, filtro === valor ? styles.filtroTextoSelecionado : null]}>
+                  {rotulo}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         {anuncios.length === 0 ? (
           <View style={styles.vazio}>
@@ -262,10 +301,27 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
               Quando este usuário anunciar materiais, eles aparecerão aqui.
             </Text>
           </View>
+        ) : anunciosFiltrados.length === 0 ? (
+          <View accessibilityLiveRegion="polite" style={styles.vazio}>
+            <Ionicons color={cores.textoSuave} name="filter-outline" size={30} />
+            <Text style={styles.vazioTitulo}>
+              {filtro === "ativos" ? "Nenhum anúncio ativo" : "Nenhum anúncio finalizado"}
+            </Text>
+            <Text style={styles.vazioTexto}>Selecione Todos para ver os anúncios publicados.</Text>
+          </View>
         ) : (
-          anuncios.map((anuncio) => <ItemAnuncioPerfil anuncio={anuncio} key={anuncio.id} />)
+          anunciosFiltrados.map((anuncio) => <ItemAnuncioPerfil anuncio={anuncio} key={anuncio.id} />)
         )}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.replace("/login")}
+        style={({ pressed }) => [styles.botaoSair, pressed ? styles.botaoSairPressionado : null]}
+      >
+        <Ionicons color={cores.erro} name="log-out-outline" size={19} />
+        <Text style={styles.botaoSairTexto}>Sair da conta</Text>
+      </Pressable>
     </>
   );
 }
@@ -377,6 +433,20 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
+  filtros: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filtro: {
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.pill,
+    justifyContent: "center",
+    backgroundColor: cores.superficieSuave,
+  },
+  filtroSelecionado: { borderColor: cores.acao, backgroundColor: cores.acao },
+  filtroTexto: { color: cores.textoSecundario, fontSize: 13, fontWeight: "700" },
+  filtroTextoSelecionado: { color: cores.superficie },
   vazio: {
     paddingHorizontal: 16,
     paddingVertical: 22,
@@ -390,4 +460,17 @@ const styles = StyleSheet.create({
   },
   vazioTitulo: { color: cores.texto, fontSize: 15, lineHeight: 20, fontWeight: "800", textAlign: "center" },
   vazioTexto: { color: cores.textoSecundario, fontSize: 13, lineHeight: 19, textAlign: "center" },
+  botaoSair: {
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.grande,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: cores.superficie,
+  },
+  botaoSairPressionado: { backgroundColor: cores.erroFundo },
+  botaoSairTexto: { color: cores.erro, fontSize: 15, fontWeight: "700" },
 });
