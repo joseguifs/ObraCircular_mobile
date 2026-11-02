@@ -2,10 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
+import { PerguntasAnuncio } from "@/components/PerguntasAnuncio";
 import { obterCorFundoAnuncio } from "@/features/anuncios/categorias";
 import {
   descreverStatusAnuncio,
@@ -142,22 +152,27 @@ export default function AnuncioDetalheScreen() {
             </Pressable>
           </View>
         ) : (
-          <ConteudoDetalhe detalhe={estado.detalhe} />
+          <ConteudoDetalhe detalhe={estado.detalhe} usuarioId={usuarioId} />
         )}
       </View>
     </View>
   );
 }
 
-function ConteudoDetalhe({ detalhe }: { detalhe: DetalheAnuncio }) {
+function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usuarioId?: string }) {
   const { anuncio, categoria, vendedor, localizacao } = detalhe;
   const status = descreverStatusAnuncio(anuncio.status);
   const publicadoEm = formatarData(anuncio.postado_em);
   const membroDesde = formatarMembroDesde(vendedor.criado_em);
+  const usuarioLogado = usuarioId && ehIdentificadorValido(usuarioId) ? usuarioId : undefined;
 
   return (
-    <>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.teclado}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.banner, { backgroundColor: obterCorFundoAnuncio(anuncio.id) }]}>
           {categoria ? (
             <View style={styles.bannerBadge}>
@@ -204,6 +219,8 @@ function ConteudoDetalhe({ detalhe }: { detalhe: DetalheAnuncio }) {
               <Ionicons color={cores.textoSuave} name="chevron-forward" size={18} />
             </Pressable>
           </Link>
+
+          <PerguntasAnuncio anuncio={anuncio} usuarioId={usuarioLogado} />
         </View>
       </ScrollView>
 
@@ -218,7 +235,7 @@ function ConteudoDetalhe({ detalhe }: { detalhe: DetalheAnuncio }) {
           </View>
         </View>
       </SafeAreaView>
-    </>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -226,6 +243,7 @@ const styles = StyleSheet.create({
   tela: { flex: 1, backgroundColor: "#0C1E36" },
   headerSafe: { backgroundColor: "#0C1E36" },
   corpo: { flex: 1, backgroundColor: cores.fundo },
+  teclado: { flex: 1 },
   scrollContent: { paddingBottom: 24 },
   aviso: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 32 },
   avisoTitulo: { color: cores.texto, fontSize: 20, fontWeight: "800", textAlign: "center" },

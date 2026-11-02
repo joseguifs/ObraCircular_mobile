@@ -10,6 +10,7 @@ import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
 import { FiltrosVitrine } from "@/components/FiltrosVitrine";
 import { FILTROS_INICIAIS, filtrarVitrine } from "@/features/anuncios/vitrine";
+import { correspondeBusca } from "@/features/anuncios/busca";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -19,6 +20,7 @@ import { cores, raios } from "@/theme/tokens";
 export default function HomeScreen() {
   const { nome, usuarioId } = useLocalSearchParams<{ nome?: string; usuarioId?: string }>();
   const [nomeAtualizado, setNomeAtualizado] = useState<string | null>(null);
+  const [ehAdmin, setEhAdmin] = useState(false);
   const idValido = typeof usuarioId === "string" && ehIdentificadorValido(usuarioId);
   const nomeExibido = nomeAtualizado ?? nome ?? "";
   const router = useRouter();
@@ -38,7 +40,11 @@ export default function HomeScreen() {
     if (!idValido) return;
     let ativo = true;
     obterUsuario(usuarioId)
-      .then((usuario) => { if (ativo) setNomeAtualizado(usuario.nome); })
+      .then((usuario) => {
+        if (!ativo) return;
+        setNomeAtualizado(usuario.nome);
+        setEhAdmin(usuario.papel === "ADMIN");
+      })
       .catch(() => { /* A saudação inicial continua disponível quando a API está fora do ar. */ });
     return () => { ativo = false; };
   }, [idValido, usuarioId]));
@@ -74,6 +80,11 @@ export default function HomeScreen() {
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
   const { anuncios: listaFiltrada, erroPreco } = filtrarVitrine(anuncios, categorias, filtros);
+  const listaFiltrada = anuncios.filter((anuncio) => {
+    if (anuncio.status !== "ATIVO") return false;
+    if (categoriaSelecionada && anuncio.categoria_id !== categoriaSelecionada) return false;
+    return correspondeBusca([anuncio.titulo, categoriaPorId.get(anuncio.categoria_id)?.nome], busca);
+  });
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
   const resumoBusca = listaFiltrada.length
@@ -135,6 +146,26 @@ export default function HomeScreen() {
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Limpar filtros</Text>
             </Pressable>
+          </Link>
+        ) : null}
+
+        {ehAdmin ? (
+          <Link href="/admin/login" asChild>
+            <Pressable accessibilityRole="link" style={styles.profileLink}>
+              <Ionicons color="#176FD0" name="shield-checkmark-outline" size={19} />
+              <Text style={styles.logoutButtonText}>Painel administrativo</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={sair}
+          style={({ pressed }) => [styles.logoutButton, pressed ? styles.logoutButtonPressed : null]}
+        >
+          <Ionicons color="#176FD0" name="log-out-outline" size={19} />
+          <Text style={styles.logoutButtonText}>Sair</Text>
+        </Pressable>
           </View>
           <Text accessibilityLiveRegion="polite" style={styles.resumo}>{erroPreco ? "Revise a faixa de preço para ver os anúncios" : resumoBusca}</Text>
 
