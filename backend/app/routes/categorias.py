@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
@@ -52,6 +52,7 @@ def criar_categoria(
         )
 
     categoria = Categoria(
+        id=uuid4(),
         nome=payload.nome,
         descricao=payload.descricao,
     )

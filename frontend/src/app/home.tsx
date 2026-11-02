@@ -18,6 +18,7 @@ import { cores, raios } from "@/theme/tokens";
 export default function HomeScreen() {
   const { nome, usuarioId } = useLocalSearchParams<{ nome?: string; usuarioId?: string }>();
   const [nomeAtualizado, setNomeAtualizado] = useState<string | null>(null);
+  const [ehAdmin, setEhAdmin] = useState(false);
   const idValido = typeof usuarioId === "string" && ehIdentificadorValido(usuarioId);
   const nomeExibido = nomeAtualizado ?? nome ?? "";
   const router = useRouter();
@@ -33,7 +34,11 @@ export default function HomeScreen() {
     if (!idValido) return;
     let ativo = true;
     obterUsuario(usuarioId)
-      .then((usuario) => { if (ativo) setNomeAtualizado(usuario.nome); })
+      .then((usuario) => {
+        if (!ativo) return;
+        setNomeAtualizado(usuario.nome);
+        setEhAdmin(usuario.papel === "ADMIN");
+      })
       .catch(() => { /* A saudação inicial continua disponível quando a API está fora do ar. */ });
     return () => { ativo = false; };
   }, [idValido, usuarioId]));
@@ -133,6 +138,26 @@ export default function HomeScreen() {
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Ver todos</Text>
             </Pressable>
+          </Link>
+        ) : null}
+
+        {ehAdmin ? (
+          <Link href="/admin/login" asChild>
+            <Pressable accessibilityRole="link" style={styles.profileLink}>
+              <Ionicons color="#176FD0" name="shield-checkmark-outline" size={19} />
+              <Text style={styles.logoutButtonText}>Painel administrativo</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={sair}
+          style={({ pressed }) => [styles.logoutButton, pressed ? styles.logoutButtonPressed : null]}
+        >
+          <Ionicons color="#176FD0" name="log-out-outline" size={19} />
+          <Text style={styles.logoutButtonText}>Sair</Text>
+        </Pressable>
           </View>
           <Text style={styles.resumo}>{resumoBusca}</Text>
 

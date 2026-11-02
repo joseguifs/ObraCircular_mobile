@@ -22,6 +22,7 @@ class Usuario(Base):
             "status IN ('ATIVO', 'INATIVO', 'BLOQUEADO')",
             name="status",
         ),
+        CheckConstraint("papel IN ('USUARIO', 'ADMIN')", name="papel"),
         Index("ix_usuarios_status", "status"),
         Index(
             "ix_usuarios_ativos",
@@ -42,6 +43,9 @@ class Usuario(Base):
     imagem_url: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'ATIVO'")
+    )
+    papel: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default=text("'USUARIO'")
     )
     criado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
