@@ -5,5 +5,4 @@ from app.models.endereco import Endereco
 from app.models.sessao_admin import SessaoAdmin
 from app.models.usuario import Usuario
 
-__all__ = ["Anuncio", "Categoria", "Endereco", "SessaoAdmin", "Usuario"]
-__all__ = ["Anuncio", "AnuncioPergunta", "Categoria", "Endereco", "Usuario"]
+__all__ = ["Anuncio", "AnuncioPergunta", "Categoria", "Endereco", "SessaoAdmin", "Usuario"]

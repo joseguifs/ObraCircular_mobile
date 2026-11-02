@@ -133,31 +133,23 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
+          {ehAdmin ? (
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push("/admin/login")}
+              style={({ pressed }) => [styles.atalhoAdmin, pressed ? styles.atalhoAdminPressionado : null]}
+            >
+              <Ionicons color={cores.acao} name="shield-checkmark-outline" size={19} />
+              <Text style={styles.atalhoAdminTexto}>Painel administrativo</Text>
+              <Ionicons color={cores.textoSuave} name="chevron-forward" size={18} />
+            </Pressable>
+          ) : null}
+
           <View style={styles.secaoCabecalho}>
             <Text accessibilityRole="header" style={styles.secaoTitulo}>Perto de você</Text>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Ver todos</Text>
             </Pressable>
-          </Link>
-        ) : null}
-
-        {ehAdmin ? (
-          <Link href="/admin/login" asChild>
-            <Pressable accessibilityRole="link" style={styles.profileLink}>
-              <Ionicons color="#176FD0" name="shield-checkmark-outline" size={19} />
-              <Text style={styles.logoutButtonText}>Painel administrativo</Text>
-            </Pressable>
-          </Link>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={sair}
-          style={({ pressed }) => [styles.logoutButton, pressed ? styles.logoutButtonPressed : null]}
-        >
-          <Ionicons color="#176FD0" name="log-out-outline" size={19} />
-          <Text style={styles.logoutButtonText}>Sair</Text>
-        </Pressable>
           </View>
           <Text style={styles.resumo}>{resumoBusca}</Text>
 
@@ -263,6 +255,21 @@ const styles = StyleSheet.create({
   },
   secaoTitulo: { color: cores.texto, fontSize: 21, fontWeight: "600", letterSpacing: -0.5 },
   verTodos: { color: cores.acao, fontSize: 13, fontWeight: "800" },
+  atalhoAdmin: {
+    marginTop: 14,
+    marginHorizontal: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.medio,
+    backgroundColor: cores.superficie,
+  },
+  atalhoAdminPressionado: { backgroundColor: cores.superficieSuave },
+  atalhoAdminTexto: { flex: 1, color: cores.acao, fontSize: 14, fontWeight: "800" },
   resumo: { marginTop: 4, marginBottom: 14, paddingHorizontal: 18, color: cores.textoSecundario, fontSize: 12.5, fontWeight: "600" },
   lista: { paddingHorizontal: 18, gap: 12 },
   aviso: { alignItems: "center", gap: 10, paddingHorizontal: 24, paddingVertical: 34 },
