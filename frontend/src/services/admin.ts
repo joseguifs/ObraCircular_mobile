@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import { ErroApi, requisicaoApi } from "./api";
 import { Anuncio, StatusAnuncio } from "./anuncios";
 import { Categoria } from "./categorias";
+import { PerguntaAnuncio } from "./perguntas";
 import { PapelUsuario, StatusUsuario, Usuario } from "./usuarios";
 
 const CHAVE_TOKEN = "obracircular.admin.token";
@@ -65,6 +66,7 @@ export type ResumoAdmin = {
   usuarios: { total: number; ativos: number; inativos: number; bloqueados: number; administradores: number };
   anuncios: { total: number; ativos: number; esgotados: number; encerrados: number; excluidos: number };
   categorias: { total: number; ativas: number; inativas: number };
+  perguntas: { total: number; sem_resposta: number };
 };
 
 export type UsuarioAdmin = Usuario & { deletado_em: string | null; total_anuncios: number };
@@ -74,6 +76,11 @@ export type AnuncioAdmin = Anuncio & {
   categoria_nome: string;
 };
 export type CategoriaAdmin = Categoria & { total_anuncios: number };
+export type PerguntaAdmin = PerguntaAnuncio & {
+  anuncio_titulo: string;
+  autor_nome: string;
+  vendedor_nome: string;
+};
 
 export async function entrarComoAdmin(email: string, senha: string): Promise<Usuario> {
   const sessao = await requisicaoApi<{ token: string; expira_em: string; usuario: Usuario }>(
@@ -179,4 +186,22 @@ export function editarCategoriaAdmin(
 
 export function excluirCategoriaAdmin(categoriaId: string) {
   return requisicaoAdmin<null>(`/categorias/${encodeURIComponent(categoriaId)}`, { method: "DELETE" });
+}
+
+export function listarPerguntasAdmin(filtros: { busca?: string; respondidas?: boolean | null }) {
+  // montarConsulta descarta `false`, então o filtro booleano vai como texto.
+  const { busca, respondidas } = filtros;
+  return requisicaoAdmin<PerguntaAdmin[]>(
+    `/perguntas${montarConsulta({ busca, respondidas: respondidas == null ? null : String(respondidas) })}`,
+  );
+}
+
+export function excluirPerguntaAdmin(perguntaId: string) {
+  return requisicaoAdmin<null>(`/perguntas/${encodeURIComponent(perguntaId)}`, { method: "DELETE" });
+}
+
+export function removerRespostaAdmin(perguntaId: string) {
+  return requisicaoAdmin<PerguntaAdmin>(`/perguntas/${encodeURIComponent(perguntaId)}/resposta`, {
+    method: "DELETE",
+  });
 }
