@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BotaoContatoVendedor } from "@/components/BotaoContatoVendedor";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { PerguntasAnuncio } from "@/components/PerguntasAnuncio";
 import { obterCorFundoAnuncio } from "@/features/anuncios/categorias";
@@ -229,10 +230,7 @@ function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usua
           <View style={styles.rodapeSalvar}>
             <Ionicons color="#25415F" name="bookmark-outline" size={19} />
           </View>
-          <View style={styles.rodapeConversar}>
-            <Text style={styles.rodapeConversarTexto}>Conversar com o vendedor</Text>
-            <Ionicons color="#FFFFFF" name="arrow-forward" size={16} />
-          </View>
+          <BotaoContatoVendedor key={`${anuncio.id}:${vendedor.telefone}`} anuncio={anuncio} vendedor={vendedor} />
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -291,15 +289,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rodapeConversar: {
-    flex: 1,
-    height: 52,
-    borderRadius: raios.grande,
-    backgroundColor: "#0C1E36",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-  },
-  rodapeConversarTexto: { color: "#FFFFFF", fontSize: 14.5, fontWeight: "800" },
 });

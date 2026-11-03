@@ -100,6 +100,32 @@ Para conferir manualmente, abra a home com anúncios ativos de preços diferente
 4. Ative **Somente doações** e confira os itens gratuitos; desative e confira a faixa restaurada.
 5. Alterne a ordenação e use **Limpar filtros** para restaurar a vitrine.
 
+## Contato com o vendedor pelo WhatsApp
+
+No detalhe do anúncio, **Conversar pelo WhatsApp** abre uma conversa com o telefone
+do vendedor e uma mensagem com o título e o código do anúncio. O comprador pode editar
+a mensagem e decide quando enviá-la. O link segue o formato oficial de
+[clique para conversa do WhatsApp](https://faq.whatsapp.com/5913398998672934/?locale=pt_BR).
+
+O botão fica indisponível com uma explicação quando o anúncio está esgotado ou
+encerrado, a conta do vendedor está inativa ou bloqueada, ou o telefone está ausente
+ou fora do formato brasileiro com DDD. Aceita telefones de 10 ou 11 dígitos, com ou
+sem `+55`, inclusive os formatos com espaços, parênteses e hífen. A validação do
+formato não confirma que o número possui uma conta no WhatsApp.
+
+Falhas ao abrir o link exibem uma mensagem com possibilidade de tentar novamente.
+A feature usa os dados já carregados no detalhe, sem novas chamadas à API e sem
+dependências adicionais. Os cenários de telefone, mensagem e disponibilidade são
+cobertos por `src/features/anuncios/contato.test.mjs`.
+
+Para conferir manualmente:
+
+1. Abra um anúncio ativo de um vendedor ativo com telefone cadastrado.
+2. Toque em **Conversar pelo WhatsApp** e confira o destinatário, o título e o código na mensagem.
+3. Volte ao aplicativo e abra um anúncio esgotado ou encerrado; confira o botão desabilitado e a explicação.
+4. Abra um anúncio cujo vendedor não tenha telefone; confira a explicação de contato indisponível.
+5. Simule uma falha em `Linking.openURL`; confira a mensagem de erro e tente novamente.
+
 ## Configurar a API
 
 Copie `.env.example` para `.env` e ajuste `EXPO_PUBLIC_API_URL` conforme o ambiente:
