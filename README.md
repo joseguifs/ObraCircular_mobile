@@ -201,3 +201,115 @@ Para preservar a confiança e a segurança da comunidade, a plataforma deverá e
 - comprador e vendedor deverão verificar o material antes de concluir a negociação;
 - denúncias poderão resultar na suspensão do anúncio ou da conta;
 - dados pessoais deverão ser coletados somente quando necessários.
+
+## Executando o backend
+
+### Requisitos
+
+- Python 3.11 ou superior;
+- PostgreSQL em execução;
+- banco de dados `obra_circular` criado.
+
+### Configuração
+
+No PowerShell, a partir da raiz do repositório:
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Revise o `DATABASE_URL` do arquivo `backend/.env` com o usuário e a senha do seu PostgreSQL. Em seguida, aplique as migrations e inicie a API:
+
+```powershell
+python -m alembic upgrade head
+fastapi dev app/main.py
+```
+
+A documentação interativa estará disponível em `http://127.0.0.1:8000/docs` e o endpoint de saúde em `http://127.0.0.1:8000/health`.
+
+### Estrutura das rotas
+
+As rotas ficam em `backend/app/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.
+
+### Usuários
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/usuarios` | Cadastra um usuário (201). |
+| GET | `/api/v1/usuarios` | Lista usuários não excluídos (200). |
+| GET | `/api/v1/usuarios/{usuario_id}` | Consulta um usuário pelo UUID (200). |
+| PATCH | `/api/v1/usuarios/{usuario_id}` | Edita somente os campos enviados (200). |
+| DELETE | `/api/v1/usuarios/{usuario_id}` | Preenche `deletado_em`, preservando o registro (204, sem corpo). |
+
+A edição aceita `nome`, `email`, `senha`, `telefone` e `status` (`ATIVO`, `INATIVO` ou `BLOQUEADO`). As validações são as mesmas do cadastro. Envie `telefone: null` para remover o telefone; os demais campos não aceitam `null`. Campos omitidos são preservados, e a senha é armazenada como hash.
+
+Consulta, edição e exclusão retornam 404 para UUIDs inexistentes ou usuários já excluídos. UUIDs e dados inválidos retornam 422. E-mails duplicados retornam 409, inclusive quando pertencem a usuários excluídos, conforme a restrição de unicidade do banco.
+
+### Autenticação
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/auth/login` | Autentica por e-mail e senha e retorna o usuário (200). |
+
+Credenciais inválidas ou usuário excluído retornam 401 com uma mensagem genérica, para não indicar qual campo está errado. Contas com status diferente de `ATIVO` retornam 403.
+
+### Administração
+
+O painel administrativo usa o papel do usuário (`usuarios.papel`: `USUARIO` ou `ADMIN`) e sessões próprias na tabela `sessoes_admin`, que guarda apenas o hash SHA-256 do token. Para criar o primeiro administrador, cadastre o usuário normalmente e promova-o pela linha de comando, a partir de `backend`:
+
+```powershell
+python -m app.scripts.promover_admin email@exemplo.com
+# para remover o papel: python -m app.scripts.promover_admin email@exemplo.com --remover
+```
+
+`POST /api/v1/admin/login` devolve um token que deve ser enviado nas demais rotas como `Authorization: Bearer <token>`. A sessão expira após `ADMIN_SESSAO_HORAS` (padrão: 8). Papel e status são conferidos a cada requisição, então rebaixar ou bloquear um admin encerra o acesso na hora.
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| POST | `/api/v1/admin/login` | Autentica um admin ativo e cria a sessão (200). Usuário comum recebe 403. |
+| POST | `/api/v1/admin/logout` | Revoga o token atual (204). |
+| GET | `/api/v1/admin/me` | Retorna o admin logado. |
+| GET | `/api/v1/admin/resumo` | Totais de usuários, anúncios e categorias por status. |
+| GET | `/api/v1/admin/usuarios` | Lista usuários; filtros `busca`, `status`, `papel`, `incluir_excluidos`, `limite`. |
+| PATCH | `/api/v1/admin/usuarios/{id}` | Altera `status` e/ou `papel`. |
+| DELETE | `/api/v1/admin/usuarios/{id}` | Exclusão lógica (204). |
+| POST | `/api/v1/admin/usuarios/{id}/restaurar` | Desfaz a exclusão lógica. |
+| GET | `/api/v1/admin/anuncios` | Lista anúncios de todos os vendedores; filtros `busca`, `status`, `categoria_id`, `vendedor_id`, `incluir_excluidos`. |
+| PATCH | `/api/v1/admin/anuncios/{id}` | Encerra (`ENCERRADO`) ou reativa (`ATIVO`) o anúncio. |
+| DELETE | `/api/v1/admin/anuncios/{id}` | Exclusão lógica (204). |
+| POST | `/api/v1/admin/anuncios/{id}/restaurar` | Desfaz a exclusão lógica. |
+| GET | `/api/v1/admin/categorias` | Lista todas as categorias, inclusive inativas, com `total_anuncios`. |
+| POST | `/api/v1/admin/categorias` | Cria categoria (201; 409 se o nome já existir). |
+| PATCH | `/api/v1/admin/categorias/{id}` | Edita `nome`, `descricao` e `status`. |
+| DELETE | `/api/v1/admin/categorias/{id}` | Exclui somente categorias sem anúncios; as demais retornam 409 e devem ser inativadas. |
+
+O admin não pode alterar o status, o papel nem excluir a própria conta pelo painel (409). No app, o painel fica em `/admin/login`, e a tela inicial mostra o atalho "Painel administrativo" para usuários com papel `ADMIN`.
+### Perguntas e respostas dos anúncios
+
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| GET | `/api/v1/anuncios/{anuncio_id}/perguntas?offset=0&limit=20` | Lista as perguntas do anúncio, da mais recente para a mais antiga (200). |
+| POST | `/api/v1/anuncios/{anuncio_id}/perguntas` | Envia `autor_id` e `pergunta` e cria a pergunta (201). |
+| POST | `/api/v1/anuncios/{anuncio_id}/perguntas/{pergunta_id}/resposta` | Envia `vendedor_id` e `resposta` e registra a resposta do vendedor (200). |
+
+A listagem é pública e retorna `items`, `total`, `offset` e `limit` (`limit` vai de 1 a 50). Quem perguntou aparece apenas pelo `autor_id`.
+
+- A pergunta tem de 3 a 500 caracteres e a resposta de 1 a 1000, sem contar espaços nas pontas (422 fora disso).
+- Somente usuários `ATIVO` perguntam ou respondem (403).
+- O vendedor não pode perguntar no próprio anúncio (403) e só ele pode responder (403).
+- Anúncios `ATIVO` e `ESGOTADO` recebem perguntas. Anúncios `ENCERRADO` retornam 400, e anúncios inexistentes ou excluídos retornam 404.
+- Cada pergunta aceita uma única resposta. Uma segunda resposta retorna 409, e uma pergunta de outro anúncio retorna 404.
+
+A tabela `anuncio_perguntas` é criada pela migration `20261027_0004`. Depois de atualizar o código, rode `python -m alembic upgrade head`.
+
+Execute os testes dos endpoints com o ambiente virtual ativado, a partir de `backend`:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+Os testes usam SQLite em memória e não alteram o banco configurado na aplicação.
