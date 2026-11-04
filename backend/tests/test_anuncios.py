@@ -211,6 +211,23 @@ class AnunciosEndpointsTest(unittest.TestCase):
             [],
         )
 
+    def test_filtra_por_categoria(self):
+        anuncio = self.cadastrar()
+
+        resposta = self.client.get(
+            "/api/v1/anuncios",
+            params={"categoria_id": str(self.categoria_id)},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual([item["id"] for item in resposta.json()], [anuncio["id"]])
+
+        resposta = self.client.get(
+            "/api/v1/anuncios",
+            params={"categoria_id": str(self.categoria_inativa_id)},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json(), [])
+
 
 if __name__ == "__main__":
     unittest.main()
