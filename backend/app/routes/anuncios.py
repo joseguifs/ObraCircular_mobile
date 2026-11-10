@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.db.session import get_db
 from app.models.anuncio import Anuncio
@@ -117,7 +117,7 @@ def listar_anuncios(
 ) -> list[Anuncio]:
     """Lista anúncios não excluídos, com filtros opcionais."""
 
-    consulta = select(Anuncio).where(Anuncio.deletado_em.is_(None))
+    consulta = select(Anuncio).options(joinedload(Anuncio.endereco)).where(Anuncio.deletado_em.is_(None))
     if categoria_id is not None:
         consulta = consulta.where(Anuncio.categoria_id == categoria_id)
     if vendedor_id is not None:

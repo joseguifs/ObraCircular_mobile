@@ -14,9 +14,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BotaoContatoVendedor } from "@/components/BotaoContatoVendedor";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { PerguntasAnuncio } from "@/components/PerguntasAnuncio";
+import { LinhaInformacao } from "@/components/LinhaInformacao";
 import { obterCorFundoAnuncio } from "@/features/anuncios/categorias";
+import { descreverConservacao, descreverEntrega, formatarQuantidade } from "@/features/anuncios/materiais";
 import {
   descreverStatusAnuncio,
   ehIdentificadorValido,
@@ -28,7 +31,6 @@ import {
 import { Anuncio, obterAnuncio } from "@/services/anuncios";
 import { ErroApi } from "@/services/api";
 import { Categoria, listarCategorias } from "@/services/categorias";
-import { listarEnderecosDoUsuario } from "@/services/enderecos";
 import { obterUsuario, Usuario } from "@/services/usuarios";
 import { cores, raios } from "@/theme/tokens";
 
@@ -54,20 +56,18 @@ async function carregarDetalheAnuncio(anuncioId: string): Promise<DetalheAnuncio
     throw error;
   }
 
-  const [categorias, vendedor, enderecos] = await Promise.all([
+  const [categorias, vendedor] = await Promise.all([
     listarCategorias(),
     obterUsuario(anuncio.vendedor_id),
-    listarEnderecosDoUsuario(anuncio.vendedor_id),
   ]);
 
   const categoria = categorias.find((item) => item.id === anuncio.categoria_id) ?? null;
-  const endereco = enderecos.find((item) => item.id === anuncio.endereco_id);
 
   return {
     anuncio,
     categoria,
     vendedor,
-    localizacao: endereco ? `${endereco.cidade}/${endereco.estado}` : null,
+    localizacao: anuncio.cidade && anuncio.estado ? `${anuncio.cidade}/${anuncio.estado}` : null,
   };
 }
 
@@ -190,14 +190,21 @@ function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usua
             {[localizacao, publicadoEm ? `publicado em ${publicadoEm}` : null].filter(Boolean).join(" · ")}
           </Text>
           <Text style={styles.preco}>{formatarPreco(anuncio.preco)}</Text>
+          <Text style={styles.subtitulo}>Preço total da quantidade anunciada</Text>
 
           <View style={styles.chips}>
             <View style={styles.chip}>
-              <Text style={styles.chipTexto}>{anuncio.quantidade} unidades</Text>
+              <Text style={styles.chipTexto}>{formatarQuantidade(anuncio.quantidade, anuncio.unidade)}</Text>
             </View>
             <View style={styles.chip}>
-              <Text style={styles.chipTexto}>{localizacao ? `Retirada em ${localizacao}` : "Retirada combinada com o vendedor"}</Text>
+              <Text style={styles.chipTexto}>{localizacao ?? "Localização não informada"}</Text>
             </View>
+          </View>
+
+          <View style={styles.informacoesMaterial}>
+            <LinhaInformacao icone="shield-checkmark-outline" rotulo="Estado de conservação" valor={descreverConservacao(anuncio.estado_conservacao)} ausente={anuncio.estado_conservacao === "NAO_INFORMADO"} />
+            <LinhaInformacao icone="resize-outline" rotulo="Dimensões" valor={anuncio.dimensoes ?? "Não informadas"} ausente={!anuncio.dimensoes} />
+            <LinhaInformacao icone="car-outline" rotulo="Retirada ou entrega" valor={descreverEntrega(anuncio.modalidade_entrega)} />
           </View>
 
           <Text accessibilityRole="header" style={styles.secaoTitulo}>Descrição</Text>
@@ -229,10 +236,7 @@ function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usua
           <View style={styles.rodapeSalvar}>
             <Ionicons color="#25415F" name="bookmark-outline" size={19} />
           </View>
-          <View style={styles.rodapeConversar}>
-            <Text style={styles.rodapeConversarTexto}>Conversar com o vendedor</Text>
-            <Ionicons color="#FFFFFF" name="arrow-forward" size={16} />
-          </View>
+          <BotaoContatoVendedor key={`${anuncio.id}:${vendedor.telefone}`} anuncio={anuncio} vendedor={vendedor} />
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>
@@ -240,6 +244,7 @@ function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usua
 }
 
 const styles = StyleSheet.create({
+  informacoesMaterial: { gap: 14, marginVertical: 18 },
   tela: { flex: 1, backgroundColor: "#0C1E36" },
   headerSafe: { backgroundColor: "#0C1E36" },
   corpo: { flex: 1, backgroundColor: cores.fundo },
@@ -291,15 +296,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  rodapeConversar: {
-    flex: 1,
-    height: 52,
-    borderRadius: raios.grande,
-    backgroundColor: "#0C1E36",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 9,
-  },
-  rodapeConversarTexto: { color: "#FFFFFF", fontSize: 14.5, fontWeight: "800" },
 });

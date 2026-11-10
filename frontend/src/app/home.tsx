@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
@@ -9,8 +9,7 @@ import { BarraAbas } from "@/components/BarraAbas";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
 import { FiltrosVitrine } from "@/components/FiltrosVitrine";
-import { FILTROS_INICIAIS, filtrarVitrine } from "@/features/anuncios/vitrine";
-import { correspondeBusca } from "@/features/anuncios/busca";
+import { FILTROS_INICIAIS, filtrarVitrine, listarCidades } from "@/features/anuncios/vitrine";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -79,18 +78,15 @@ export default function HomeScreen() {
   }
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
+  const cidades = listarCidades(anuncios);
+  const cidadeSelecionada = cidades.find((item) => item.valor === filtros.cidade)?.rotulo ?? filtros.cidade;
   const { anuncios: listaFiltrada, erroPreco } = filtrarVitrine(anuncios, categorias, filtros);
-  const listaFiltrada = anuncios.filter((anuncio) => {
-    if (anuncio.status !== "ATIVO") return false;
-    if (categoriaSelecionada && anuncio.categoria_id !== categoriaSelecionada) return false;
-    return correspondeBusca([anuncio.titulo, categoriaPorId.get(anuncio.categoria_id)?.nome], busca);
-  });
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
   const resumoBusca = listaFiltrada.length
     ? `${listaFiltrada.length} ${listaFiltrada.length === 1 ? "anúncio disponível" : "anúncios disponíveis"}${
-        nomeCategoriaSelecionada ? ` em ${nomeCategoriaSelecionada}` : " na sua região"
-      }`
+        nomeCategoriaSelecionada ? ` na categoria ${nomeCategoriaSelecionada}` : ""
+      }${cidadeSelecionada ? ` em ${cidadeSelecionada}` : " em todas as cidades"}`
     : "Nada encontrado com esses filtros";
 
   return (
@@ -139,33 +135,28 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
-          <FiltrosVitrine erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
+          <FiltrosVitrine cidades={cidades} erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
+
+          <View style={styles.acoesConta}>
+            {ehAdmin ? (
+              <Link href="/admin/login" asChild>
+                <Pressable accessibilityRole="link" style={styles.acaoConta}>
+                  <Ionicons color={cores.acao} name="shield-checkmark-outline" size={19} />
+                  <Text style={styles.acaoContaTexto}>Painel administrativo</Text>
+                </Pressable>
+              </Link>
+            ) : null}
+            <Pressable accessibilityRole="button" onPress={() => router.replace("/login")} style={styles.acaoConta}>
+              <Ionicons color={cores.acao} name="log-out-outline" size={19} />
+              <Text style={styles.acaoContaTexto}>Sair</Text>
+            </Pressable>
+          </View>
 
           <View style={styles.secaoCabecalho}>
-            <Text accessibilityRole="header" style={styles.secaoTitulo}>Perto de você</Text>
+            <Text accessibilityRole="header" style={styles.secaoTitulo}>Materiais disponíveis</Text>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Limpar filtros</Text>
             </Pressable>
-          </Link>
-        ) : null}
-
-        {ehAdmin ? (
-          <Link href="/admin/login" asChild>
-            <Pressable accessibilityRole="link" style={styles.profileLink}>
-              <Ionicons color="#176FD0" name="shield-checkmark-outline" size={19} />
-              <Text style={styles.logoutButtonText}>Painel administrativo</Text>
-            </Pressable>
-          </Link>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={sair}
-          style={({ pressed }) => [styles.logoutButton, pressed ? styles.logoutButtonPressed : null]}
-        >
-          <Ionicons color="#176FD0" name="log-out-outline" size={19} />
-          <Text style={styles.logoutButtonText}>Sair</Text>
-        </Pressable>
           </View>
           <Text accessibilityLiveRegion="polite" style={styles.resumo}>{erroPreco ? "Revise a faixa de preço para ver os anúncios" : resumoBusca}</Text>
 
@@ -194,7 +185,7 @@ export default function HomeScreen() {
           ) : listaFiltrada.length === 0 ? (
             <View style={styles.vazio}>
               <Text style={styles.vazioTitulo}>Nenhum anúncio encontrado</Text>
-              <Text style={styles.vazioTexto}>Ajuste a busca, a categoria ou os filtros de preço.</Text>
+              <Text style={styles.vazioTexto}>Ajuste a cidade, a busca, a categoria ou os filtros de preço.</Text>
               <Pressable accessibilityRole="button" onPress={limparFiltros} style={styles.botaoTentar}>
                 <Text style={styles.botaoTentarTexto}>Limpar filtros</Text>
               </Pressable>
@@ -269,6 +260,9 @@ const styles = StyleSheet.create({
   chipAtivo: { borderColor: "#0C1E36", backgroundColor: "#0C1E36" },
   chipTexto: { color: "#25415F", fontSize: 13, fontWeight: "700" },
   chipTextoAtivo: { color: "#FFFFFF" },
+  acoesConta: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 12, paddingHorizontal: 18, marginTop: 12 },
+  acaoConta: { minHeight: 44, flexDirection: "row", alignItems: "center", gap: 6 },
+  acaoContaTexto: { color: cores.acao, fontSize: 13, fontWeight: "700" },
   secaoCabecalho: {
     marginTop: 18,
     paddingHorizontal: 18,

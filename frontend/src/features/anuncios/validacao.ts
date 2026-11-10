@@ -1,3 +1,6 @@
+import { ESTADOS_CONSERVACAO, MODALIDADES_ENTREGA, UNIDADES } from "./materiais.ts";
+import type { EstadoConservacao, ModalidadeEntrega, UnidadeMaterial } from "./materiais.ts";
+
 export type DadosFormularioAnuncio = {
   titulo: string;
   descricao: string;
@@ -5,6 +8,10 @@ export type DadosFormularioAnuncio = {
   preco: string;
   quantidade: string;
   imagemUrl: string;
+  unidade: string;
+  estadoConservacao: string;
+  dimensoes: string;
+  modalidadeEntrega: string;
 };
 
 export type ErrosFormularioAnuncio = Partial<Record<keyof DadosFormularioAnuncio, string>>;
@@ -28,7 +35,7 @@ export function validarAnuncio(dados: DadosFormularioAnuncio): ErrosFormularioAn
   const erros: ErrosFormularioAnuncio = {};
   const titulo = dados.titulo.trim().replace(/\s+/g, " ");
   const descricao = dados.descricao.trim().replace(/\s+/g, " ");
-  const quantidade = Number(dados.quantidade);
+  const quantidade = Number(dados.quantidade.replace(",", "."));
 
   if (titulo.length < 5) erros.titulo = "Use um título com pelo menos 5 caracteres.";
   else if (titulo.length > 150) erros.titulo = "O título deve ter no máximo 150 caracteres.";
@@ -41,9 +48,13 @@ export function validarAnuncio(dados: DadosFormularioAnuncio): ErrosFormularioAn
   else if (moedaParaCentavos(dados.preco) > 999_999_999_999) {
     erros.preco = "O preço deve ser de no máximo R$ 9.999.999.999,99.";
   }
-  if (!/^\d+$/.test(dados.quantidade) || !Number.isInteger(quantidade) || quantidade < 0) {
-    erros.quantidade = "Informe uma quantidade inteira a partir de 0.";
+  if (!/^\d{1,12}([.,]\d{1,3})?$/.test(dados.quantidade) || !Number.isFinite(quantidade) || quantidade < 0 || quantidade > 999_999_999_999.999) {
+    erros.quantidade = "Informe uma quantidade a partir de 0, com até 3 casas decimais.";
   }
+  if (!UNIDADES.some((item) => item.valor === dados.unidade)) erros.unidade = "Selecione a unidade de medida.";
+  if (!ESTADOS_CONSERVACAO.some((item) => item.valor === dados.estadoConservacao)) erros.estadoConservacao = "Informe o estado de conservação.";
+  if (!MODALIDADES_ENTREGA.some((item) => item.valor === dados.modalidadeEntrega)) erros.modalidadeEntrega = "Selecione retirada ou entrega.";
+  if (dados.dimensoes.trim().length > 200) erros.dimensoes = "Use até 200 caracteres para as dimensões.";
   if (dados.imagemUrl.trim() && !/^https?:\/\/\S+$/i.test(dados.imagemUrl.trim())) {
     erros.imagemUrl = "Informe um endereço de imagem iniciado por http:// ou https://.";
   }
@@ -57,7 +68,11 @@ export function normalizarAnuncio(dados: DadosFormularioAnuncio) {
     descricao: dados.descricao.trim().replace(/\s+/g, " "),
     categoria_id: dados.categoriaId,
     preco: moedaParaCentavos(dados.preco) / 100,
-    quantidade: Number(dados.quantidade),
+    quantidade: Number(dados.quantidade.replace(",", ".")),
+    unidade: dados.unidade as UnidadeMaterial,
+    estado_conservacao: dados.estadoConservacao as EstadoConservacao,
+    dimensoes: dados.dimensoes.trim().replace(/\s+/g, " ") || null,
+    modalidade_entrega: dados.modalidadeEntrega as ModalidadeEntrega,
     imagem_url: dados.imagemUrl.trim() || null,
   };
 }
