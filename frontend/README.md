@@ -100,6 +100,35 @@ Para conferir manualmente, abra a home com anúncios ativos de preços diferente
 4. Ative **Somente doações** e confira os itens gratuitos; desative e confira a faixa restaurada.
 5. Alterne a ordenação e use **Limpar filtros** para restaurar a vitrine.
 
+## Cidade e informações dos materiais
+
+Na home, **Cidade dos materiais** abre uma lista pesquisável das cidades/UF com
+anúncios ativos. A seleção usa o endereço vinculado ao anúncio, diferencia cidades
+homônimas em estados diferentes e pode ser combinada com busca, categoria, preço
+e doações. **Todas as cidades** remove apenas a restrição de localização;
+**Limpar filtros** restaura todos os filtros. A lista de cidades não desaparece ao
+aplicar outros filtros. Não é necessário conceder acesso ao GPS.
+
+Os cartões mostram a cidade/UF e a quantidade com sua unidade. O cadastro inclui
+unidade de medida (unidades, m², m³, metros, kg, litros, caixas, sacos ou lotes),
+estado de conservação (novo/sem uso ou usado), dimensões opcionais e modalidade
+de retirada/entrega. Quantidades aceitam vírgula ou ponto e até três casas
+decimais, por exemplo `12,5 m²`. O preço informado é o total da quantidade anunciada.
+Os detalhes exibem essas informações; perfil e administração também respeitam
+a unidade cadastrada.
+
+Antes de iniciar a API atualizada, execute `python -m alembic upgrade head` no
+backend. Anúncios anteriores continuam em unidades, com conservação não informada,
+dimensões ausentes e entrega a combinar.
+
+Para conferir manualmente:
+
+1. Cadastre anúncios em cidades diferentes e abra a seleção de cidade na home.
+2. Selecione uma cidade/UF e combine com categoria, faixa de preço e doações.
+3. Use **Todas as cidades** e **Limpar filtros**; confira a lista e os contadores.
+4. Publique um material de `12,5 m²`, conservação usada, dimensões e entrega.
+5. Confira quantidade, cidade e demais informações no cartão e no detalhe.
+
 ## Contato com o vendedor pelo WhatsApp
 
 No detalhe do anúncio, **Conversar pelo WhatsApp** abre uma conversa com o telefone

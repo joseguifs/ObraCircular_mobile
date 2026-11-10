@@ -211,6 +211,64 @@ class AnunciosEndpointsTest(unittest.TestCase):
             [],
         )
 
+    def test_informacoes_material_e_quantidade_fracionada(self):
+        dados = self.dados_validos()
+        dados.update(quantidade="12.500", unidade="M2", estado_conservacao="NOVO",
+                     dimensoes=" 60  ×  60 cm ", modalidade_entrega="RETIRADA_ENTREGA")
+        resposta = self.client.post("/api/v1/anuncios", json=dados)
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        anuncio = resposta.json()
+        self.assertEqual(anuncio["quantidade"], "12.500")
+        self.assertEqual(anuncio["unidade"], "M2")
+        self.assertEqual(anuncio["dimensoes"], "60 × 60 cm")
+        url = f"/api/v1/anuncios/{anuncio['id']}"
+        editado = self.client.patch(url, json={"quantidade": "0.125", "unidade": "KG",
+                                             "estado_conservacao": "USADO", "dimensoes": None,
+                                             "modalidade_entrega": "ENTREGA"})
+        self.assertEqual(editado.status_code, 200, editado.text)
+        for campo, esperado in {"quantidade": "0.125", "unidade": "KG", "estado_conservacao": "USADO",
+                                "dimensoes": None, "modalidade_entrega": "ENTREGA"}.items():
+            self.assertEqual(editado.json()[campo], esperado)
+            self.assertEqual(self.client.get(url).json()[campo], esperado)
+        self.assertEqual(self.client.patch(url, json={"quantidade": 0}).json()["status"], "ESGOTADO")
+        self.assertEqual(self.client.patch(url, json={"quantidade": "0.001"}).json()["status"], "ATIVO")
+
+    def test_compatibilidade_anuncio_sem_novos_campos(self):
+        anuncio = self.cadastrar()
+        self.assertEqual(anuncio["unidade"], "UNIDADE")
+        self.assertEqual(anuncio["estado_conservacao"], "NAO_INFORMADO")
+        self.assertEqual(anuncio["modalidade_entrega"], "A_COMBINAR")
+        self.assertIsNone(anuncio["dimensoes"])
+
+    def test_validacao_informacoes_material_no_cadastro_e_patch(self):
+        anuncio = self.cadastrar()
+        for campo, valor in [("unidade", "INVALIDA"), ("estado_conservacao", "INVALIDO"),
+                             ("modalidade_entrega", "INVALIDA"), ("dimensoes", "a" * 201),
+                             ("quantidade", "0.0001"), ("quantidade", -1),
+                             ("quantidade", "1000000000000"), ("unidade", None),
+                             ("estado_conservacao", None), ("modalidade_entrega", None)]:
+            with self.subTest(campo=campo, valor=valor):
+                dados = {**self.dados_validos(), campo: valor}
+                self.assertEqual(self.client.post("/api/v1/anuncios", json=dados).status_code, 422)
+                self.assertEqual(self.client.patch(f"/api/v1/anuncios/{anuncio['id']}", json={campo: valor}).status_code, 422)
+
+    def test_cidade_corresponde_ao_endereco_do_anuncio(self):
+        outro_endereco = self.db.get(Endereco, self.outro_endereco_id)
+        outro_endereco.usuario_id = self.vendedor_id
+        outro_endereco.cidade = "São Luís"
+        outro_endereco.estado = "MA"
+        self.db.commit()
+        dados = {**self.dados_validos(), "endereco_id": str(self.outro_endereco_id)}
+        resposta = self.client.post("/api/v1/anuncios", json=dados)
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        anuncio = resposta.json()
+        self.assertEqual((anuncio["cidade"], anuncio["estado"]), ("São Luís", "MA"))
+        for item in (self.client.get("/api/v1/anuncios").json()[0],
+                     self.client.get(f"/api/v1/anuncios/{anuncio['id']}").json()):
+            self.assertEqual((item["cidade"], item["estado"]), ("São Luís", "MA"))
+            self.assertNotIn("logradouro", item)
+            self.assertNotIn("cep", item)
+
 
 if __name__ == "__main__":
     unittest.main()

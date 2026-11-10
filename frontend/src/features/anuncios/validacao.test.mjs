@@ -15,6 +15,10 @@ const anuncioValido = {
   preco: "R$ 120,00",
   quantidade: "4",
   imagemUrl: "https://example.com/piso.jpg",
+  unidade: "CAIXA",
+  estadoConservacao: "NOVO",
+  dimensoes: " 60 × 60 cm ",
+  modalidadeEntrega: "RETIRADA",
 };
 
 test("aceita e normaliza um anúncio válido", () => {
@@ -26,11 +30,16 @@ test("aceita e normaliza um anúncio válido", () => {
     preco: 120,
     quantidade: 4,
     imagem_url: "https://example.com/piso.jpg",
+    unidade: "CAIXA",
+    estado_conservacao: "NOVO",
+    dimensoes: "60 × 60 cm",
+    modalidade_entrega: "RETIRADA",
   });
 });
 
 test("rejeita os campos obrigatórios inválidos", () => {
   const erros = validarAnuncio({
+    ...anuncioValido,
     titulo: "Piso",
     descricao: "Pouca informação",
     categoriaId: "",
@@ -47,6 +56,23 @@ test("rejeita os campos obrigatórios inválidos", () => {
     "quantidade",
     "titulo",
   ]);
+});
+
+test("aceita quantidades fracionadas e normaliza dimensões opcionais", () => {
+  for (const quantidade of ["12,5", "12.500", "0,001", "2147483647", "999999999999.999"]) {
+    const dados = { ...anuncioValido, quantidade, unidade: "M2", dimensoes: "   " };
+    assert.deepEqual(validarAnuncio(dados), {});
+    assert.equal(normalizarAnuncio(dados).quantidade, Number(quantidade.replace(",", ".")));
+    assert.equal(normalizarAnuncio(dados).dimensoes, null);
+  }
+});
+
+test("rejeita quantidade malformada, precisão excedente e informações inválidas", () => {
+  for (const quantidade of ["", "1,", "1,2,3", "1e2", "-1", "0.0001", "1000000000000", "Infinity"]) {
+    assert.ok(validarAnuncio({ ...anuncioValido, quantidade }).quantidade, quantidade);
+  }
+  const erros = validarAnuncio({ ...anuncioValido, unidade: "", estadoConservacao: "NAO_INFORMADO", modalidadeEntrega: "", dimensoes: "a".repeat(201) });
+  assert.deepEqual(Object.keys(erros).sort(), ["dimensoes", "estadoConservacao", "modalidadeEntrega", "unidade"]);
 });
 
 test("aceita estoque inicial zerado conforme o contrato da API", () => {

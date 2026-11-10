@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
 from app.core.security import gerar_hash_token, gerar_token_sessao, verificar_senha
@@ -311,6 +311,7 @@ def restaurar_usuario_admin(usuario_id: UUID, _: SessaoAtual, db: DbSession) -> 
 def consulta_anuncios_admin():
     return (
         select(Anuncio, Usuario.nome, Categoria.nome)
+        .options(joinedload(Anuncio.endereco))
         .join(Usuario, Usuario.id == Anuncio.vendedor_id)
         .join(Categoria, Categoria.id == Anuncio.categoria_id)
     )

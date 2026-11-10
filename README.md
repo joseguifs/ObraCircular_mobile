@@ -245,6 +245,31 @@ fastapi dev app/main.py
 
 A documentação interativa estará disponível em `http://127.0.0.1:8000/docs` e o endpoint de saúde em `http://127.0.0.1:8000/health`.
 
+### Atualização de cidade e materiais (novembro de 2026)
+
+Execute `python -m alembic upgrade head` antes de iniciar esta versão da API.
+A migration `20261110_0005` une as ramificações de administração e perguntas sem
+reescrever migrations já aplicadas. A `20261110_0006` adiciona os dados de materiais,
+mantendo uma única ponta no Alembic. A atualização funciona a partir de qualquer
+uma das ramificações anteriores e preserva os anúncios existentes.
+
+As respostas de anúncios incluem `cidade` e `estado` do endereço vinculado, sem
+incluir o endereço completo. O app usa esses dados para selecionar cidade/UF.
+Cadastro e edição de anúncios aceitam:
+
+| Campo | Valores |
+| --- | --- |
+| `quantidade` | Decimal não negativo, até 12 dígitos inteiros e 3 casas decimais. Na resposta, é uma string decimal, assim como `preco`. |
+| `unidade` | `UNIDADE`, `M2`, `M3`, `METRO`, `KG`, `LITRO`, `CAIXA`, `SACO`, `LOTE`. |
+| `estado_conservacao` | `NOVO`, `USADO`, `NAO_INFORMADO`. |
+| `dimensoes` | Texto opcional de até 200 caracteres; `null` remove o valor na edição. |
+| `modalidade_entrega` | `RETIRADA`, `ENTREGA`, `RETIRADA_ENTREGA`, `A_COMBINAR`. |
+
+Para compatibilidade com os dados anteriores, campos omitidos no cadastro usam
+`UNIDADE`, `NAO_INFORMADO`, `null` e `A_COMBINAR`, respectivamente. O app exige
+conservação e modalidade explícitas em novos anúncios. O preço é o total da
+quantidade anunciada.
+
 ### Estrutura das rotas
 
 As rotas ficam em `backend/app/routes`. Os módulos de `usuarios`, `categorias`, `enderecos` e `anuncios` já estão preparados para receber os endpoints sob o prefixo `/api/v1`.

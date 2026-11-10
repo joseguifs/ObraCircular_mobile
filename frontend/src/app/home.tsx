@@ -9,7 +9,7 @@ import { BarraAbas } from "@/components/BarraAbas";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
 import { FiltrosVitrine } from "@/components/FiltrosVitrine";
-import { FILTROS_INICIAIS, filtrarVitrine } from "@/features/anuncios/vitrine";
+import { FILTROS_INICIAIS, filtrarVitrine, listarCidades } from "@/features/anuncios/vitrine";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -78,13 +78,15 @@ export default function HomeScreen() {
   }
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
+  const cidades = listarCidades(anuncios);
+  const cidadeSelecionada = cidades.find((item) => item.valor === filtros.cidade)?.rotulo ?? filtros.cidade;
   const { anuncios: listaFiltrada, erroPreco } = filtrarVitrine(anuncios, categorias, filtros);
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
   const resumoBusca = listaFiltrada.length
     ? `${listaFiltrada.length} ${listaFiltrada.length === 1 ? "anúncio disponível" : "anúncios disponíveis"}${
-        nomeCategoriaSelecionada ? ` em ${nomeCategoriaSelecionada}` : " na sua região"
-      }`
+        nomeCategoriaSelecionada ? ` na categoria ${nomeCategoriaSelecionada}` : ""
+      }${cidadeSelecionada ? ` em ${cidadeSelecionada}` : " em todas as cidades"}`
     : "Nada encontrado com esses filtros";
 
   return (
@@ -133,7 +135,7 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
-          <FiltrosVitrine erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
+          <FiltrosVitrine cidades={cidades} erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
 
           <View style={styles.acoesConta}>
             {ehAdmin ? (
@@ -151,7 +153,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.secaoCabecalho}>
-            <Text accessibilityRole="header" style={styles.secaoTitulo}>Perto de você</Text>
+            <Text accessibilityRole="header" style={styles.secaoTitulo}>Materiais disponíveis</Text>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Limpar filtros</Text>
             </Pressable>
@@ -183,7 +185,7 @@ export default function HomeScreen() {
           ) : listaFiltrada.length === 0 ? (
             <View style={styles.vazio}>
               <Text style={styles.vazioTitulo}>Nenhum anúncio encontrado</Text>
-              <Text style={styles.vazioTexto}>Ajuste a busca, a categoria ou os filtros de preço.</Text>
+              <Text style={styles.vazioTexto}>Ajuste a cidade, a busca, a categoria ou os filtros de preço.</Text>
               <Pressable accessibilityRole="button" onPress={limparFiltros} style={styles.botaoTentar}>
                 <Text style={styles.botaoTentarTexto}>Limpar filtros</Text>
               </Pressable>

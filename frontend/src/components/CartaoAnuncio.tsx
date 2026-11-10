@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { obterCorFundoAnuncio, obterIconeCategoria } from "@/features/anuncios/categorias";
 import { formatarData, formatarPreco } from "@/features/usuarios/perfil";
+import { formatarQuantidade } from "@/features/anuncios/materiais";
 import { Anuncio } from "@/services/anuncios";
 import { Categoria } from "@/services/categorias";
 import { Ionicons } from "@expo/vector-icons";
@@ -47,9 +48,10 @@ export function CartaoAnuncio({ anuncio, categoria, onPress }: CartaoAnuncioProp
           {anuncio.titulo}
         </Text>
         {publicadoEm ? <Text numberOfLines={1} style={styles.data}>Publicado em {publicadoEm}</Text> : null}
+        {anuncio.cidade && anuncio.estado ? <Text numberOfLines={1} style={styles.data}>{anuncio.cidade}/{anuncio.estado}</Text> : null}
         <View style={styles.rodape}>
           <Text style={styles.preco}>{formatarPreco(anuncio.preco)}</Text>
-          <Text numberOfLines={1} style={styles.quantidade}>{anuncio.quantidade} un.</Text>
+          <Text numberOfLines={1} style={styles.quantidade}>{formatarQuantidade(anuncio.quantidade, anuncio.unidade)}</Text>
         </View>
       </View>
     </Pressable>
