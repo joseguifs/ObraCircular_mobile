@@ -74,6 +74,32 @@ seguindo o uso de `node:test` já adotado no perfil. Para conferir manualmente:
 4. Apague o telefone, salve e confira **Não informado** no perfil.
 5. Altere um campo e toque em **Cancelar**; o dado anterior deve ser preservado.
 
+## Busca e filtros da vitrine
+
+Na home, a busca considera título, descrição e categoria, sem diferenciar letras
+maiúsculas ou acentos. Ela pode ser combinada com a categoria e com **Preço mínimo**
+e **Preço máximo**. Os limites são inclusivos e opcionais; informe valores em reais,
+como `50`, `50,50` ou `1.234,56`. Faixas invertidas ou valores inválidos exibem um
+erro até serem corrigidos.
+
+**Somente doações** mostra os anúncios com preço zero e suspende a faixa de preço.
+Os valores digitados são preservados e voltam a valer ao desativar a opção.
+Escolha **Mais recentes** (padrão), **Menor preço** ou **Maior preço** para ordenar;
+preços iguais são desempatados pela publicação mais recente. Apenas anúncios
+ativos aparecem. **Limpar filtros** restaura busca, categoria, preços, doações e
+ordenação ao estado inicial, inclusive quando a busca não retorna resultados.
+
+Os filtros usam os anúncios já carregados, sem chamadas adicionais à API.
+A lógica está coberta por `src/features/anuncios/vitrine.test.mjs`.
+
+Para conferir manualmente, abra a home com anúncios ativos de preços diferentes:
+
+1. Busque uma palavra da descrição sem acento e selecione sua categoria.
+2. Defina uma faixa de preço e confira os limites e a quantidade de resultados.
+3. Inverta os limites e confira a mensagem de validação; depois corrija-os.
+4. Ative **Somente doações** e confira os itens gratuitos; desative e confira a faixa restaurada.
+5. Alterne a ordenação e use **Limpar filtros** para restaurar a vitrine.
+
 ## Configurar a API
 
 Copie `.env.example` para `.env` e ajuste `EXPO_PUBLIC_API_URL` conforme o ambiente:
