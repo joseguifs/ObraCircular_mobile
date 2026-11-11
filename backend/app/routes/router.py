@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
-from app.routes import admin, anuncios, auth, categorias, enderecos, health, usuarios
-from app.routes import anuncio_perguntas, anuncios, auth, categorias, enderecos, health, usuarios
+from app.routes import admin, anuncio_perguntas, anuncios, auth, categorias, enderecos, health, usuarios
 
 
 api_router = APIRouter()

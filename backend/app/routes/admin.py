@@ -5,12 +5,13 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.core.config import settings
 from app.core.security import gerar_hash_token, gerar_token_sessao, verificar_senha
 from app.db.session import get_db
 from app.models.anuncio import Anuncio
+from app.models.anuncio_pergunta import AnuncioPergunta
 from app.models.categoria import Categoria
 from app.models.enums import PapelUsuario, StatusAnuncio, StatusCategoria, StatusUsuario
 from app.models.sessao_admin import SessaoAdmin
@@ -21,12 +22,14 @@ from app.schemas.admin import (
     AnuncioAdminAtualizacao,
     AnuncioAdminResposta,
     CategoriaAdminResposta,
+    PerguntaAdminResposta,
     ResumoAdmin,
     SessaoAdminResposta,
     UsuarioAdminAtualizacao,
     UsuarioAdminResposta,
 )
 from app.schemas.anuncio import AnuncioResponse
+from app.schemas.anuncio_pergunta import AnuncioPerguntaResponse
 from app.schemas.auth import LoginCredenciais
 from app.schemas.categoria import CategoriaCreate, CategoriaResponse, CategoriaUpdate
 from app.schemas.usuario import UsuarioResposta
@@ -160,6 +163,10 @@ def obter_resumo(_: SessaoAtual, db: DbSession) -> dict:
     anuncios = contar_por(db, Anuncio.status, Anuncio.deletado_em.is_(None))
     anuncios_excluidos = db.scalar(select(func.count()).where(Anuncio.deletado_em.is_not(None)))
     categorias = contar_por(db, Categoria.status)
+    perguntas = db.scalar(select(func.count()).select_from(AnuncioPergunta)) or 0
+    sem_resposta = db.scalar(
+        select(func.count()).select_from(AnuncioPergunta).where(AnuncioPergunta.resposta.is_(None))
+    ) or 0
 
     return {
         "usuarios": {
@@ -181,6 +188,7 @@ def obter_resumo(_: SessaoAtual, db: DbSession) -> dict:
             "ativas": categorias.get(StatusCategoria.ATIVA, 0),
             "inativas": categorias.get(StatusCategoria.INATIVA, 0),
         },
+        "perguntas": {"total": perguntas, "sem_resposta": sem_resposta},
     }
 
 
@@ -477,3 +485,99 @@ def excluir_categoria_admin(categoria_id: UUID, _: SessaoAtual, db: DbSession) -
         )
     rotas_categorias.excluir_categoria(categoria_id, db)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------------------
+# Perguntas
+# ---------------------------------------------------------------------------
+
+Autor = aliased(Usuario)
+Vendedor = aliased(Usuario)
+
+
+def consulta_perguntas_admin():
+    return (
+        select(AnuncioPergunta, Anuncio.titulo, Autor.nome, Vendedor.nome)
+        .join(Anuncio, Anuncio.id == AnuncioPergunta.anuncio_id)
+        .join(Autor, Autor.id == AnuncioPergunta.autor_id)
+        .join(Vendedor, Vendedor.id == Anuncio.vendedor_id)
+    )
+
+
+def montar_pergunta_admin(
+    pergunta: AnuncioPergunta, anuncio_titulo: str, autor_nome: str, vendedor_nome: str
+) -> PerguntaAdminResposta:
+    return PerguntaAdminResposta.model_validate(
+        {
+            **AnuncioPerguntaResponse.model_validate(pergunta).model_dump(),
+            "anuncio_titulo": anuncio_titulo,
+            "autor_nome": autor_nome,
+            "vendedor_nome": vendedor_nome,
+        }
+    )
+
+
+def obter_pergunta(pergunta_id: UUID, db: Session) -> AnuncioPergunta:
+    pergunta = db.get(AnuncioPergunta, pergunta_id)
+    if pergunta is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pergunta não encontrada.")
+    return pergunta
+
+
+@router.get("/perguntas", response_model=list[PerguntaAdminResposta])
+def listar_perguntas_admin(
+    _: SessaoAtual,
+    db: DbSession,
+    busca: str | None = None,
+    respondidas: bool | None = None,
+    anuncio_id: UUID | None = None,
+    limite: int = LIMITE_LISTAGEM,
+) -> list[PerguntaAdminResposta]:
+    """Lista perguntas de todos os anúncios para moderação, das mais recentes às mais antigas."""
+
+    consulta = consulta_perguntas_admin()
+    if busca and busca.strip():
+        termo = f"%{busca.strip()}%"
+        consulta = consulta.where(
+            or_(
+                AnuncioPergunta.pergunta.ilike(termo),
+                AnuncioPergunta.resposta.ilike(termo),
+                Anuncio.titulo.ilike(termo),
+                Autor.nome.ilike(termo),
+            )
+        )
+    if respondidas is True:
+        consulta = consulta.where(AnuncioPergunta.resposta.is_not(None))
+    elif respondidas is False:
+        consulta = consulta.where(AnuncioPergunta.resposta.is_(None))
+    if anuncio_id is not None:
+        consulta = consulta.where(AnuncioPergunta.anuncio_id == anuncio_id)
+
+    linhas = db.execute(
+        consulta.order_by(AnuncioPergunta.criado_em.desc(), AnuncioPergunta.id.desc()).limit(limite)
+    ).all()
+    return [montar_pergunta_admin(*linha) for linha in linhas]
+
+
+@router.delete("/perguntas/{pergunta_id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_pergunta_admin(pergunta_id: UUID, _: SessaoAtual, db: DbSession) -> Response:
+    """Remove definitivamente uma pergunta (e sua resposta) do anúncio."""
+
+    db.delete(obter_pergunta(pergunta_id, db))
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/perguntas/{pergunta_id}/resposta", response_model=PerguntaAdminResposta)
+def remover_resposta_admin(pergunta_id: UUID, _: SessaoAtual, db: DbSession) -> PerguntaAdminResposta:
+    """Apaga só a resposta; a pergunta volta a aguardar o vendedor."""
+
+    pergunta = obter_pergunta(pergunta_id, db)
+    if pergunta.resposta is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Esta pergunta não tem resposta.")
+    pergunta.resposta = None
+    pergunta.respondido_em = None
+    db.commit()
+
+    linha = db.execute(consulta_perguntas_admin().where(AnuncioPergunta.id == pergunta_id)).one()
+    return montar_pergunta_admin(*linha)

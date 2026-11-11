@@ -1,5 +1,6 @@
 export type AcaoUsuario = "ativar" | "inativar" | "bloquear" | "promover" | "rebaixar" | "excluir" | "restaurar";
 export type AcaoAnuncio = "encerrar" | "reativar" | "excluir" | "restaurar";
+export type AcaoPergunta = "removerResposta" | "excluir";
 
 type UsuarioGerenciavel = {
   id: string;
@@ -21,6 +22,11 @@ export const rotulosAcaoUsuario: Record<AcaoUsuario, string> = {
   rebaixar: "Remover admin",
   excluir: "Excluir",
   restaurar: "Restaurar",
+};
+
+export const rotulosAcaoPergunta: Record<AcaoPergunta, string> = {
+  removerResposta: "Remover resposta",
+  excluir: "Excluir pergunta",
 };
 
 export const rotulosAcaoAnuncio: Record<AcaoAnuncio, string> = {
@@ -57,6 +63,11 @@ export function listarAcoesUsuario(usuario: UsuarioGerenciavel, adminId: string 
 export function listarAcoesAnuncio(anuncio: AnuncioModeravel): AcaoAnuncio[] {
   if (anuncio.deletado_em) return ["restaurar"];
   return [anuncio.status === "ENCERRADO" ? "reativar" : "encerrar", "excluir"];
+}
+
+// Ambas apagam conteúdo de forma definitiva, então sempre pedem confirmação.
+export function listarAcoesPergunta(pergunta: { resposta: string | null }): AcaoPergunta[] {
+  return pergunta.resposta === null ? ["excluir"] : ["removerResposta", "excluir"];
 }
 
 export type DadosCategoria = { nome: string; descricao: string };

@@ -30,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="admin/usuarios" options={{ title: "Usuários" }} />
         <Stack.Screen name="admin/anuncios" options={{ title: "Anúncios" }} />
         <Stack.Screen name="admin/categorias" options={{ title: "Categorias" }} />
+        <Stack.Screen name="admin/perguntas" options={{ title: "Perguntas" }} />
       </Stack>
     </SafeAreaProvider>
   );

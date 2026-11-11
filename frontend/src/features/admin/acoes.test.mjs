@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { listarAcoesAnuncio, listarAcoesUsuario, normalizarCategoria, validarCategoria } from "./acoes.ts";
+import {
+  listarAcoesAnuncio,
+  listarAcoesPergunta,
+  listarAcoesUsuario,
+  normalizarCategoria,
+  validarCategoria,
+} from "./acoes.ts";
 
 const usuario = { id: "u1", status: "ATIVO", papel: "USUARIO", deletado_em: null };
 
@@ -32,6 +38,11 @@ test("alterna entre encerrar e reativar anúncios", () => {
   assert.deepEqual(listarAcoesAnuncio({ status: "ATIVO", deletado_em: null }), ["encerrar", "excluir"]);
   assert.deepEqual(listarAcoesAnuncio({ status: "ESGOTADO", deletado_em: null }), ["encerrar", "excluir"]);
   assert.deepEqual(listarAcoesAnuncio({ status: "ENCERRADO", deletado_em: null }), ["reativar", "excluir"]);
+});
+
+test("só oferece remover a resposta quando a pergunta foi respondida", () => {
+  assert.deepEqual(listarAcoesPergunta({ resposta: null }), ["excluir"]);
+  assert.deepEqual(listarAcoesPergunta({ resposta: "Sim, ainda tenho." }), ["removerResposta", "excluir"]);
 });
 
 test("normaliza e valida os dados da categoria", () => {
