@@ -90,6 +90,12 @@ ativos aparecem. **Limpar filtros** restaura busca, categoria, preços, doaçõe
 ordenação ao estado inicial, inclusive quando a busca não retorna resultados.
 
 Os filtros usam os anúncios já carregados, sem chamadas adicionais à API.
+O campo **Quantidade mínima (unidades)** mostra anúncios com pelo menos a quantidade
+informada (por exemplo, `20`). Ele aceita inteiros positivos, pode ficar vazio e
+combina com os demais filtros, inclusive doações. Valores inválidos exibem uma
+mensagem; **Limpar filtros** também apaga a quantidade mínima. Para conferir,
+use anúncios com 19, 20 e 21 unidades: ao informar `20`, apenas os dois últimos
+devem aparecer. Não há soma de quantidades entre anúncios.
 A lógica está coberta por `src/features/anuncios/vitrine.test.mjs`.
 
 Para conferir manualmente, abra a home com anúncios ativos de preços diferentes:

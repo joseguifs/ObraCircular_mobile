@@ -10,7 +10,6 @@ import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { CartaoAnuncio } from "@/components/CartaoAnuncio";
 import { FiltrosVitrine } from "@/components/FiltrosVitrine";
 import { FILTROS_INICIAIS, filtrarVitrine } from "@/features/anuncios/vitrine";
-import { correspondeBusca } from "@/features/anuncios/busca";
 import { ehIdentificadorValido } from "@/features/usuarios/perfil";
 import { Anuncio, listarAnuncios } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
@@ -79,12 +78,8 @@ export default function HomeScreen() {
   }
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria]));
-  const { anuncios: listaFiltrada, erroPreco } = filtrarVitrine(anuncios, categorias, filtros);
-  const listaFiltrada = anuncios.filter((anuncio) => {
-    if (anuncio.status !== "ATIVO") return false;
-    if (categoriaSelecionada && anuncio.categoria_id !== categoriaSelecionada) return false;
-    return correspondeBusca([anuncio.titulo, categoriaPorId.get(anuncio.categoria_id)?.nome], busca);
-  });
+  const { anuncios: listaFiltrada, erroPreco, erroQuantidade } = filtrarVitrine(anuncios, categorias, filtros);
+  const erroFiltros = erroPreco ?? erroQuantidade;
 
   const nomeCategoriaSelecionada = categoriaSelecionada ? categoriaPorId.get(categoriaSelecionada)?.nome : null;
   const resumoBusca = listaFiltrada.length
@@ -139,35 +134,26 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
 
-          <FiltrosVitrine erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
+          <View style={styles.acoesConta}>
+            {ehAdmin ? (
+              <Pressable accessibilityRole="button" onPress={() => router.push("/admin/login")} style={styles.acaoConta}>
+                <Text style={styles.verTodos}>Painel administrativo</Text>
+              </Pressable>
+            ) : null}
+            <Pressable accessibilityRole="button" onPress={() => router.replace("/login")} style={styles.acaoConta}>
+              <Text style={styles.verTodos}>Sair</Text>
+            </Pressable>
+          </View>
+
+          <FiltrosVitrine erroQuantidade={erroQuantidade} erroPreco={erroPreco} filtros={filtros} onChange={atualizarFiltros} />
 
           <View style={styles.secaoCabecalho}>
             <Text accessibilityRole="header" style={styles.secaoTitulo}>Perto de você</Text>
             <Pressable accessibilityRole="button" hitSlop={8} onPress={limparFiltros}>
               <Text style={styles.verTodos}>Limpar filtros</Text>
             </Pressable>
-          </Link>
-        ) : null}
-
-        {ehAdmin ? (
-          <Link href="/admin/login" asChild>
-            <Pressable accessibilityRole="link" style={styles.profileLink}>
-              <Ionicons color="#176FD0" name="shield-checkmark-outline" size={19} />
-              <Text style={styles.logoutButtonText}>Painel administrativo</Text>
-            </Pressable>
-          </Link>
-        ) : null}
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={sair}
-          style={({ pressed }) => [styles.logoutButton, pressed ? styles.logoutButtonPressed : null]}
-        >
-          <Ionicons color="#176FD0" name="log-out-outline" size={19} />
-          <Text style={styles.logoutButtonText}>Sair</Text>
-        </Pressable>
           </View>
-          <Text accessibilityLiveRegion="polite" style={styles.resumo}>{erroPreco ? "Revise a faixa de preço para ver os anúncios" : resumoBusca}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.resumo}>{erroFiltros ? "Revise os filtros para ver os anúncios" : resumoBusca}</Text>
 
           {carregando ? (
             <View style={styles.aviso}>
@@ -186,15 +172,15 @@ export default function HomeScreen() {
                 <Text style={styles.botaoTentarTexto}>Tentar novamente</Text>
               </Pressable>
             </View>
-          ) : erroPreco ? (
+          ) : erroFiltros ? (
             <View style={styles.vazio}>
-              <Text style={styles.vazioTitulo}>Revise a faixa de preço</Text>
-              <Text style={styles.vazioTexto}>{erroPreco}</Text>
+              <Text style={styles.vazioTitulo}>Revise os filtros</Text>
+              <Text style={styles.vazioTexto}>{erroFiltros}</Text>
             </View>
           ) : listaFiltrada.length === 0 ? (
             <View style={styles.vazio}>
               <Text style={styles.vazioTitulo}>Nenhum anúncio encontrado</Text>
-              <Text style={styles.vazioTexto}>Ajuste a busca, a categoria ou os filtros de preço.</Text>
+              <Text style={styles.vazioTexto}>Ajuste a busca, a categoria, o preço ou a quantidade mínima.</Text>
               <Pressable accessibilityRole="button" onPress={limparFiltros} style={styles.botaoTentar}>
                 <Text style={styles.botaoTentarTexto}>Limpar filtros</Text>
               </Pressable>
@@ -269,6 +255,8 @@ const styles = StyleSheet.create({
   chipAtivo: { borderColor: "#0C1E36", backgroundColor: "#0C1E36" },
   chipTexto: { color: "#25415F", fontSize: 13, fontWeight: "700" },
   chipTextoAtivo: { color: "#FFFFFF" },
+  acoesConta: { flexDirection: "row", flexWrap: "wrap", justifyContent: "flex-end", gap: 12, paddingHorizontal: 18 },
+  acaoConta: { minHeight: 44, justifyContent: "center" },
   secaoCabecalho: {
     marginTop: 18,
     paddingHorizontal: 18,

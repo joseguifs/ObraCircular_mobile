@@ -8,11 +8,11 @@ const categorias = [
   { id: "hidraulica", nome: "Hidráulica" },
 ];
 const anuncios = [
-  { id: "piso", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "100.00", status: "ATIVO", postado_em: "2026-10-20T10:00:00Z" },
-  { id: "doacao", titulo: "Azulejos para reaproveitar", descricao: "Retirada gratuita no local", categoria_id: "pisos", preco: "0.00", status: "ATIVO", postado_em: "2026-10-21T10:00:00Z" },
-  { id: "torneira", titulo: "Torneira de metal", descricao: "Peça sem uso", categoria_id: "hidraulica", preco: "50.50", status: "ATIVO", postado_em: "2026-10-22T10:00:00Z" },
-  { id: "esgotado", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "0.00", status: "ESGOTADO", postado_em: "2026-10-23T10:00:00Z" },
-  { id: "encerrado", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "20.00", status: "ENCERRADO", postado_em: "2026-10-24T10:00:00Z" },
+  { id: "piso", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "100.00", quantidade: 20, status: "ATIVO", postado_em: "2026-10-20T10:00:00Z" },
+  { id: "doacao", titulo: "Azulejos para reaproveitar", descricao: "Retirada gratuita no local", categoria_id: "pisos", preco: "0.00", quantidade: 30, status: "ATIVO", postado_em: "2026-10-21T10:00:00Z" },
+  { id: "torneira", titulo: "Torneira de metal", descricao: "Peça sem uso", categoria_id: "hidraulica", preco: "50.50", quantidade: 1, status: "ATIVO", postado_em: "2026-10-22T10:00:00Z" },
+  { id: "esgotado", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "0.00", quantidade: 30, status: "ESGOTADO", postado_em: "2026-10-23T10:00:00Z" },
+  { id: "encerrado", titulo: "Piso cerâmico", descricao: "Caixas de cerâmica azul", categoria_id: "pisos", preco: "20.00", quantidade: 50, status: "ENCERRADO", postado_em: "2026-10-24T10:00:00Z" },
 ];
 
 function selecionar(alteracoes = {}, lista = anuncios) {
@@ -104,6 +104,31 @@ test("não altera a lista original nem os filtros ao ordenar", () => {
 });
 
 test("funciona sem anúncios ou sem categorias carregadas", () => {
-  assert.deepEqual(selecionar({}, []), { anuncios: [], erroPreco: null });
+  assert.deepEqual(selecionar({}, []), { anuncios: [], erroPreco: null, erroQuantidade: null });
   assert.deepEqual(ids(filtrarVitrine(anuncios, [], { ...FILTROS_INICIAIS, busca: "ceramico" })), ["piso"]);
+});
+
+
+test("quantidade mínima inclui o limite e combina com categoria, preço e doações", () => {
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "20" })), ["doacao", "piso"]);
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "21" })), ["doacao"]);
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "20", categoriaId: "pisos", precoMinimo: "1" })), ["piso"]);
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "30", somenteDoacoes: true })), ["doacao"]);
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "31", somenteDoacoes: true })), []);
+});
+
+test("quantidade vazia não restringe e limpar filtros restaura os resultados", () => {
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "  " })), ids(selecionar()));
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: " 20 " })), ["doacao", "piso"]);
+  assert.deepEqual(ids(selecionar({ quantidadeMinima: "999" })), []);
+  assert.equal(selecionar(FILTROS_INICIAIS).anuncios.length, 3);
+  assert.equal(selecionar({ quantidadeMinima: "20" }).erroQuantidade, null);
+});
+
+test("rejeita quantidades fracionárias, negativas, zero e valores inválidos", () => {
+  for (const quantidadeMinima of ["0", "-1", "1,5", "1.5", "abc", "1e3", "Infinity", "9007199254740992"]) {
+    const resultado = selecionar({ quantidadeMinima });
+    assert.deepEqual(resultado.anuncios, []);
+    assert.match(resultado.erroQuantidade, /inteira maior que zero/);
+  }
 });

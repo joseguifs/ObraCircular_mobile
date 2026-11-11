@@ -5,6 +5,7 @@ export type FiltrosVitrine = {
   categoriaId: string | null;
   precoMinimo: string;
   precoMaximo: string;
+  quantidadeMinima: string;
   somenteDoacoes: boolean;
   ordenacao: OrdenacaoVitrine;
 };
@@ -14,6 +15,7 @@ export const FILTROS_INICIAIS: FiltrosVitrine = {
   categoriaId: null,
   precoMinimo: "",
   precoMaximo: "",
+  quantidadeMinima: "",
   somenteDoacoes: false,
   ordenacao: "recentes",
 };
@@ -23,6 +25,7 @@ type AnuncioVitrine = {
   descricao: string;
   categoria_id: string;
   preco: string;
+  quantidade: number;
   status: string;
   postado_em: string;
 };
@@ -45,20 +48,27 @@ export function filtrarVitrine<T extends AnuncioVitrine>(
   anuncios: T[],
   categorias: { id: string; nome: string }[],
   filtros: FiltrosVitrine,
-): { anuncios: T[]; erroPreco: string | null } {
+): { anuncios: T[]; erroPreco: string | null; erroQuantidade: string | null } {
+  const textoQuantidade = filtros.quantidadeMinima.trim();
+  const quantidadeMinima = textoQuantidade ? Number(textoQuantidade) : null;
+  const erroQuantidade = textoQuantidade && (!/^\d+$/.test(textoQuantidade) || !Number.isSafeInteger(quantidadeMinima) || quantidadeMinima! < 1)
+    ? "Informe uma quantidade inteira maior que zero, como 20."
+    : null;
   const minimo = filtros.somenteDoacoes ? null : lerCentavos(filtros.precoMinimo);
   const maximo = filtros.somenteDoacoes ? null : lerCentavos(filtros.precoMaximo);
   if (Number.isNaN(minimo) || Number.isNaN(maximo)) {
-    return { anuncios: [], erroPreco: "Informe preços válidos, como 50 ou 1.234,56." };
+    return { anuncios: [], erroPreco: "Informe preços válidos, como 50 ou 1.234,56.", erroQuantidade };
   }
   if (minimo !== null && maximo !== null && minimo > maximo) {
-    return { anuncios: [], erroPreco: "O preço mínimo deve ser menor ou igual ao máximo." };
+    return { anuncios: [], erroPreco: "O preço mínimo deve ser menor ou igual ao máximo.", erroQuantidade };
   }
+  if (erroQuantidade) return { anuncios: [], erroPreco: null, erroQuantidade };
 
   const categoriaPorId = new Map(categorias.map((categoria) => [categoria.id, categoria.nome]));
   const termo = normalizarBusca(filtros.busca);
   const resultado = anuncios.filter((anuncio) => {
     if (anuncio.status !== "ATIVO") return false;
+    if (quantidadeMinima !== null && !(anuncio.quantidade >= quantidadeMinima)) return false;
     if (filtros.categoriaId && anuncio.categoria_id !== filtros.categoriaId) return false;
     const preco = Math.round(Number(anuncio.preco) * 100);
     if (!Number.isSafeInteger(preco) || preco < 0) return false;
@@ -76,5 +86,5 @@ export function filtrarVitrine<T extends AnuncioVitrine>(
     if (filtros.ordenacao === "maior-preco") return Number(b.preco) - Number(a.preco) || porData(a, b);
     return porData(a, b);
   });
-  return { anuncios: resultado, erroPreco: null };
+  return { anuncios: resultado, erroPreco: null, erroQuantidade: null };
 }

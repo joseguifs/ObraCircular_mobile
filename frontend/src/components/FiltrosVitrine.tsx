@@ -12,10 +12,11 @@ const ORDENACOES: { valor: OrdenacaoVitrine; rotulo: string }[] = [
 type Props = {
   filtros: Filtros;
   erroPreco: string | null;
+  erroQuantidade: string | null;
   onChange: (alteracoes: Partial<Filtros>) => void;
 };
 
-export function FiltrosVitrine({ filtros, erroPreco, onChange }: Props) {
+export function FiltrosVitrine({ filtros, erroPreco, erroQuantidade, onChange }: Props) {
   return (
     <View style={styles.painel}>
       <View style={styles.linha}>
@@ -42,6 +43,19 @@ export function FiltrosVitrine({ filtros, erroPreco, onChange }: Props) {
         })}
       </View>
       {erroPreco ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.erro}>{erroPreco}</Text> : null}
+      <Text style={styles.rotulo}>Quantidade mínima (unidades)</Text>
+      <TextInput
+        accessibilityLabel="Quantidade mínima (unidades)"
+        accessibilityHint="Opcional. Mostra anúncios com pelo menos esta quantidade disponível."
+        keyboardType="number-pad"
+        maxLength={16}
+        onChangeText={(quantidadeMinima) => onChange({ quantidadeMinima })}
+        placeholder="Ex.: 20"
+        placeholderTextColor={cores.textoSuave}
+        style={[styles.input, erroQuantidade ? styles.inputErro : null]}
+        value={filtros.quantidadeMinima}
+      />
+      {erroQuantidade ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.erro}>{erroQuantidade}</Text> : null}
       <View style={styles.doacoes}>
         <Text style={styles.rotulo}>Somente doações</Text>
         <Switch
