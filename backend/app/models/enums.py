@@ -46,3 +46,30 @@ class ModalidadeEntrega(StrEnum):
 class PapelUsuario(StrEnum):
     USUARIO = "USUARIO"
     ADMIN = "ADMIN"
+
+
+class StatusPedido(StrEnum):
+    AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO"
+    PAGO = "PAGO"
+    CANCELADO = "CANCELADO"
+    EXPIRADO = "EXPIRADO"
+    REEMBOLSADO = "REEMBOLSADO"
+
+
+class StatusPagamento(StrEnum):
+    CRIADO = "CRIADO"
+    PENDENTE = "PENDENTE"
+    EM_PROCESSAMENTO = "EM_PROCESSAMENTO"
+    APROVADO = "APROVADO"
+    RECUSADO = "RECUSADO"
+    CANCELADO = "CANCELADO"
+    REEMBOLSADO = "REEMBOLSADO"
+
+
+class MetodoPagamento(StrEnum):
+    PIX = "PIX"
+    CARTAO_CREDITO = "CARTAO_CREDITO"
+    CARTAO_DEBITO = "CARTAO_DEBITO"
+    BOLETO = "BOLETO"
+    SALDO_MERCADO_PAGO = "SALDO_MERCADO_PAGO"
+    OUTRO = "OUTRO"
