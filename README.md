@@ -352,3 +352,27 @@ python -m unittest discover -s tests -v
 ```
 
 Os testes usam SQLite em memória e não alteram o banco configurado na aplicação.
+
+### Pagamento com Pix (QR code)
+
+A compra de um anúncio é paga com Pix gerado pela API de pagamentos do Mercado Pago (`/v1/payments`). O comprador escaneia o QR code ou copia o código "copia e cola" e paga no app de qualquer banco, sem sair do ObraCircular. O preço anunciado corresponde ao lote inteiro, então a compra aprovada esgota o anúncio.
+
+Fluxo:
+
+1. `POST /api/v1/pedidos/checkout-pix` cria o pedido, reserva o anúncio e gera a cobrança Pix, que vence junto com a reserva (`MP_CHECKOUT_MINUTES`, mínimo efetivo de 31 minutos). A resposta traz `pix.qr_code` (copia e cola), `pix.qr_code_base64` (imagem) e `pix.expira_em`. Se o mesmo comprador chamar de novo, recebe o mesmo Pix ainda válido.
+2. O Mercado Pago avisa o backend em `POST /api/v1/webhooks/mercado-pago` (assinatura `x-signature` validada). O backend consulta o pagamento na API e só então confirma o pedido.
+3. O app mostra o QR code com contagem regressiva e acompanha o pedido em `GET /api/v1/pedidos/{id}?comprador_id=...`. Periodicamente, ou no botão "Já paguei, atualizar", chama `POST /api/v1/pedidos/{id}/sincronizar?comprador_id=...`, que consulta o Mercado Pago diretamente. Assim o pagamento é confirmado mesmo sem webhook configurado.
+
+4. A tela "Meus pedidos" (botão no perfil) lista as compras do usuário com `GET /api/v1/pedidos?comprador_id=...`, da mais recente para a mais antiga.
+
+Reservas vencidas são liberadas automaticamente. Um Pix aprovado depois do vencimento confirma a compra se o anúncio continuar livre; caso contrário, o valor é devolvido automaticamente.
+
+Configuração (`backend/.env`, veja `.env.example`). Os mesmos nomes com prefixo `OBRA_CIRCULAR_` usados no `.env` da versão web também são aceitos:
+
+- `MP_ACCESS_TOKEN`: access token da conta recebedora, que precisa ter chave Pix cadastrada.
+- `MP_WEBHOOK_SECRET_TEST` / `MP_WEBHOOK_SECRET_PRODUCTION`: assinaturas secretas dos webhooks configurados no painel do Mercado Pago (evento "Pagamentos").
+- `MP_PUBLIC_BASE_URL`: URL pública HTTPS do backend para receber webhooks. Em desenvolvimento, use o ngrok (`ngrok http 8000`). É opcional: sem ela, a confirmação vem pela sincronização do app.
+- `MP_TEST_PAYER_EMAIL`: somente com `MP_LIVE_MODE=false`, substitui o e-mail do comprador como pagador (precisa ser diferente do e-mail da conta recebedora). Em produção (`MP_LIVE_MODE=true`) é ignorado e cada comprador usa o próprio e-mail cadastrado no app.
+- `MP_LIVE_MODE`: `true` somente em produção.
+
+Depois de configurar, aplique a migration com `alembic upgrade head`.
