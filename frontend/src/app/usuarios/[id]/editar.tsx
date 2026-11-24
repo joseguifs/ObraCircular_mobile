@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AvatarUsuario } from "@/components/AvatarUsuario";
+import { CampoChavePix } from "@/components/CampoChavePix";
 import { CampoFormulario } from "@/components/CampoFormulario";
 import { Marca } from "@/components/Marca";
 import {
@@ -25,9 +26,10 @@ import {
   obterAlteracoesUsuario,
   validarEdicaoUsuario,
 } from "@/features/usuarios/edicao";
+import { normalizarChavePix, validarChavePix } from "@/features/usuarios/chavePix";
 import { ehIdentificadorValido, formatarTelefone } from "@/features/usuarios/perfil";
 import { ErroApi } from "@/services/api";
-import { atualizarUsuario, obterUsuario, Usuario } from "@/services/usuarios";
+import { atualizarUsuario, obterUsuario, TipoChavePix, Usuario } from "@/services/usuarios";
 import { cores, raios } from "@/theme/tokens";
 
 type EstadoEdicao =
@@ -52,6 +54,10 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
   const [sucesso, setSucesso] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [imagem, setImagem] = useState<string | null | undefined>(undefined);
+  // Nova chave Pix; vazia mantém a atual (a API só devolve a chave mascarada).
+  const [tipoChavePix, setTipoChavePix] = useState<TipoChavePix | "">("");
+  const [chavePix, setChavePix] = useState("");
+  const [erroChavePix, setErroChavePix] = useState<string | undefined>(undefined);
   const [selecionando, setSelecionando] = useState(false);
   const [recargas, setRecargas] = useState(0);
   const emEnvio = useRef(false);
@@ -146,13 +152,19 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
     if (emEnvio.current || selecionando || estado.situacao !== "pronto") return;
     Keyboard.dismiss();
     const novosErros = validarEdicaoUsuario(dados);
+    const trocarChavePix = tipoChavePix !== "" || chavePix.trim() !== "";
+    const novoErroChavePix = trocarChavePix ? validarChavePix(tipoChavePix, chavePix) : undefined;
     setErros(novosErros);
+    setErroChavePix(novoErroChavePix);
     setMensagemApi(null);
     setSucesso(false);
-    if (Object.keys(novosErros).length > 0) return;
+    if (Object.keys(novosErros).length > 0 || novoErroChavePix) return;
 
     const alteracoes = { ...obterAlteracoesUsuario(dados, estado.usuario),
       ...(imagem !== undefined ? { imagem_url: imagem } : {}),
+      ...(trocarChavePix && tipoChavePix
+        ? { chave_pix_tipo: tipoChavePix, chave_pix: normalizarChavePix(tipoChavePix, chavePix) }
+        : {}),
     };
     if (Object.keys(alteracoes).length === 0) {
       setMensagemApi("Nenhuma alteração para salvar.");
@@ -171,6 +183,8 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
         telefone: formatarTelefone(usuario.telefone) ?? "",
       });
       setImagem(undefined);
+      setTipoChavePix("");
+      setChavePix("");
       setSucesso(true);
     } catch (error) {
       if (!montado.current) return;
@@ -365,7 +379,6 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
                       keyboardType="phone-pad"
                       maxLength={20}
                       onChangeText={(valor) => atualizar("telefone", valor)}
-                      onSubmitEditing={salvar}
                       placeholder="(63) 99999-9999"
                       placeholderTextColor={cores.textoSuave}
                       returnKeyType="done"
@@ -376,6 +389,44 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
                   <Text style={styles.dica}>
                     O telefone é opcional. Deixe o campo vazio para removê-lo.
                   </Text>
+                  <Text accessibilityRole="header" style={styles.secaoTitulo}>
+                    Recebimento das vendas
+                  </Text>
+                  {estado.usuario.chave_pix_mascarada ? (
+                    <Text style={styles.dicaPix}>
+                      Chave Pix atual ({estado.usuario.chave_pix_tipo === "CPF" ? "CPF" : "e-mail"}):{" "}
+                      <Text style={styles.chaveAtual}>{estado.usuario.chave_pix_mascarada}</Text>. Para
+                      trocar, escolha o tipo e informe a nova chave.
+                    </Text>
+                  ) : (
+                    <View style={[styles.feedback, styles.feedbackAlerta]}>
+                      <Ionicons color={cores.erro} name="wallet-outline" size={22} />
+                      <Text style={[styles.feedbackTexto, { color: cores.erro }]}>
+                        Cadastre uma chave Pix (e-mail ou CPF) para anunciar com preço e receber o valor das vendas.
+                      </Text>
+                    </View>
+                  )}
+                  <CampoChavePix
+                    disabled={enviando}
+                    erro={erroChavePix}
+                    label={estado.usuario.chave_pix_mascarada ? "Nova chave Pix" : "Chave Pix"}
+                    onChangeTipo={(tipo) => {
+                      if (tipo === tipoChavePix) return;
+                      setTipoChavePix(tipo);
+                      setChavePix("");
+                      setErroChavePix(undefined);
+                      setSucesso(false);
+                    }}
+                    onChangeValor={(valor) => {
+                      setChavePix(valor);
+                      setErroChavePix(undefined);
+                      setMensagemApi(null);
+                      setSucesso(false);
+                    }}
+                    onSubmitEditing={salvar}
+                    tipo={tipoChavePix}
+                    valor={chavePix}
+                  />
                   {mensagemApi ? (
                     <View
                       accessibilityLiveRegion="polite"
@@ -498,6 +549,9 @@ const styles = StyleSheet.create({
   feedbackTexto: { flex: 1, fontSize: 14, lineHeight: 20 },
   feedbackErro: { backgroundColor: cores.erroFundo },
   feedbackSucesso: { backgroundColor: cores.sucessoFundo },
+  feedbackAlerta: { backgroundColor: cores.erroFundo },
+  dicaPix: { marginTop: -10, marginBottom: 18, color: cores.textoSecundario, fontSize: 14, lineHeight: 21 },
+  chaveAtual: { color: cores.texto, fontWeight: "700" },
   botao: {
     minHeight: 52,
     paddingHorizontal: 22,

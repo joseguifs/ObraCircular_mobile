@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,6 +39,7 @@ import { cadastrarAnuncio } from "@/services/anuncios";
 import { Categoria, listarCategorias } from "@/services/categorias";
 import { ContextoPublicacao, obterContextoPublicacao } from "@/services/contextoPublicacao";
 import { cadastrarEndereco } from "@/services/enderecos";
+import { obterUsuario } from "@/services/usuarios";
 import { cores, raios } from "@/theme/tokens";
 
 const estadoInicial: DadosFormularioAnuncio = {
@@ -76,6 +77,7 @@ export default function NovoAnuncioScreen() {
   const [enviando, setEnviando] = useState(false);
   const [erroDependencias, setErroDependencias] = useState<string | null>(null);
   const [erroApi, setErroApi] = useState<string | null>(null);
+  const [faltaChavePix, setFaltaChavePix] = useState(false);
 
   const conteudoEstreito = width < 560;
   const categoriaSelecionada = categorias.find((categoria) => categoria.id === dados.categoriaId);
@@ -104,6 +106,25 @@ export default function NovoAnuncioScreen() {
     void carregarDependencias();
   }, [carregarDependencias]);
 
+  // Ao voltar da edição do perfil, confere se a chave Pix foi cadastrada.
+  const vendedorSemChaveId = contexto && !contexto.vendedor.chave_pix_tipo ? contexto.vendedor.id : null;
+  useFocusEffect(useCallback(() => {
+    if (!vendedorSemChaveId) return;
+    let ativo = true;
+    obterUsuario(vendedorSemChaveId)
+      .then((vendedor) => {
+        if (!ativo || !vendedor.chave_pix_tipo) return;
+        setContexto((atual) => (atual ? { ...atual, vendedor } : atual));
+        setFaltaChavePix(false);
+      })
+      .catch(() => { /* O envio confere a chave de novo. */ });
+    return () => { ativo = false; };
+  }, [vendedorSemChaveId]));
+
+  function abrirCadastroChavePix() {
+    if (contexto) router.push({ pathname: "/usuarios/[id]/editar", params: { id: contexto.vendedor.id } });
+  }
+
   function atualizar<K extends keyof DadosFormularioAnuncio>(campo: K, valor: DadosFormularioAnuncio[K]) {
     setDados((atual) => ({ ...atual, [campo]: valor }));
     if (erros[campo]) {
@@ -125,6 +146,7 @@ export default function NovoAnuncioScreen() {
     setErros(novosErros);
     setErrosEndereco(novosErrosEndereco);
     setErroApi(null);
+    setFaltaChavePix(false);
 
     if (
       Object.keys(novosErros).length > 0 ||
@@ -134,6 +156,17 @@ export default function NovoAnuncioScreen() {
 
     setEnviando(true);
     try {
+      // Anúncios com preço são pagos via Pix e repassados à chave do vendedor.
+      if (normalizarAnuncio(dados).preco > 0 && !contexto.vendedor.chave_pix_tipo) {
+        // Confere de novo: a chave pode ter sido cadastrada após abrir esta tela.
+        const vendedor = await obterUsuario(contexto.vendedor.id);
+        setContexto((atual) => (atual ? { ...atual, vendedor } : atual));
+        if (!vendedor.chave_pix_tipo) {
+          setFaltaChavePix(true);
+          return;
+        }
+      }
+
       const endereco = contexto.endereco ?? await cadastrarEndereco({
         ...normalizarEndereco(dadosEndereco),
         usuario_id: contexto.vendedor.id,
@@ -183,6 +216,21 @@ export default function NovoAnuncioScreen() {
                 Conte o que sobrou da obra para que outra pessoa possa reaproveitar.
               </Text>
             </View>
+
+            {vendedorSemChaveId && !faltaChavePix ? (
+              // A chave só é pedida a quem tenta anunciar; doações continuam liberadas.
+              <View style={styles.avisoPixInfo}>
+                <Ionicons color={cores.acao} name="wallet-outline" size={22} />
+                <View style={styles.avisoPix}>
+                  <Text style={styles.avisoPixInfoTexto}>
+                    Para anunciar com preço, cadastre a chave Pix (e-mail ou CPF) em que você vai receber o valor da venda. Doações (R$ 0,00) não precisam de chave.
+                  </Text>
+                  <Pressable accessibilityRole="link" onPress={abrirCadastroChavePix}>
+                    <Text style={styles.linkPix}>Cadastrar chave Pix</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
 
             {carregandoDados ? (
               <View style={styles.dependencyCard}>
@@ -516,6 +564,20 @@ export default function NovoAnuncioScreen() {
               </Text>
             </View>
 
+            {faltaChavePix && contexto ? (
+              <View accessibilityLiveRegion="polite" style={styles.apiError}>
+                <Ionicons color={cores.erro} name="wallet-outline" size={20} />
+                <View style={styles.avisoPix}>
+                  <Text style={styles.apiErrorText}>
+                    Para anunciar com preço, cadastre a chave Pix (e-mail ou CPF) em que você vai receber o valor da venda. Doações (R$ 0,00) não precisam de chave.
+                  </Text>
+                  <Pressable accessibilityRole="link" onPress={abrirCadastroChavePix}>
+                    <Text style={styles.linkPix}>Cadastrar chave Pix</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
             {erroApi ? (
               <View accessibilityLiveRegion="polite" style={styles.apiError}>
                 <Ionicons color={cores.erro} name="alert-circle-outline" size={20} />
@@ -659,6 +721,19 @@ const styles = StyleSheet.create({
     backgroundColor: cores.erroFundo,
   },
   apiErrorText: { flex: 1, color: cores.erro, fontSize: 13, lineHeight: 18 },
+  avisoPix: { flex: 1, gap: 8 },
+  avisoPixInfo: {
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: cores.acao,
+    borderRadius: raios.medio,
+    backgroundColor: cores.superficie,
+  },
+  avisoPixInfoTexto: { color: cores.texto, fontSize: 14, lineHeight: 20 },
+  linkPix: { color: cores.acao, fontSize: 14, fontWeight: "800", textDecorationLine: "underline" },
   submitButton: {
     height: 58,
     marginTop: 22,

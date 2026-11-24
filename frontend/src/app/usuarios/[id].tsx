@@ -268,6 +268,12 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
           rotulo="Localização"
           valor={localizacao ?? "Nenhum endereço cadastrado"}
         />
+        <LinhaInformacao
+          ausente={!usuario.chave_pix_mascarada}
+          icone="wallet-outline"
+          rotulo={usuario.chave_pix_tipo === "CPF" ? "Chave Pix para receber (CPF)" : usuario.chave_pix_tipo === "EMAIL" ? "Chave Pix para receber (e-mail)" : "Chave Pix para receber"}
+          valor={usuario.chave_pix_mascarada ?? "Não cadastrada: cadastre em Editar dados para vender"}
+        />
       </View>
 
       <View style={styles.secao}>
