@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BotaoComprarPix } from "@/components/BotaoComprarPix";
 import { BotaoContatoVendedor } from "@/components/BotaoContatoVendedor";
 import { CabecalhoTopo } from "@/components/CabecalhoTopo";
 import { PerguntasAnuncio } from "@/components/PerguntasAnuncio";
@@ -152,14 +153,14 @@ export default function AnuncioDetalheScreen() {
             </Pressable>
           </View>
         ) : (
-          <ConteudoDetalhe detalhe={estado.detalhe} usuarioId={usuarioId} />
+          <ConteudoDetalhe detalhe={estado.detalhe} nome={nome} usuarioId={usuarioId} />
         )}
       </View>
     </View>
   );
 }
 
-function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usuarioId?: string }) {
+function ConteudoDetalhe({ detalhe, nome, usuarioId }: { detalhe: DetalheAnuncio; nome?: string; usuarioId?: string }) {
   const { anuncio, categoria, vendedor, localizacao } = detalhe;
   const status = descreverStatusAnuncio(anuncio.status);
   const publicadoEm = formatarData(anuncio.postado_em);
@@ -232,6 +233,9 @@ function ConteudoDetalhe({ detalhe, usuarioId }: { detalhe: DetalheAnuncio; usua
       </ScrollView>
 
       <SafeAreaView edges={["bottom"]} style={styles.rodapeSafe}>
+        <View style={styles.rodapePix}>
+          <BotaoComprarPix anuncio={anuncio} nome={nome} usuarioId={usuarioLogado} />
+        </View>
         <View style={styles.rodape}>
           <View style={styles.rodapeSalvar}>
             <Ionicons color="#25415F" name="bookmark-outline" size={19} />
@@ -286,6 +290,7 @@ const styles = StyleSheet.create({
   vendedorNome: { color: cores.texto, fontSize: 14, fontWeight: "800" },
   vendedorMeta: { marginTop: 2, color: cores.textoSecundario, fontSize: 12, fontWeight: "600" },
   rodapeSafe: { backgroundColor: cores.superficie, borderTopWidth: 1, borderTopColor: cores.borda },
+  rodapePix: { paddingHorizontal: 12, paddingTop: 12 },
   rodape: { flexDirection: "row", gap: 10, padding: 12 },
   rodapeSalvar: {
     width: 52,
