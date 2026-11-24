@@ -33,6 +33,7 @@ export default function RootLayout() {
         <Stack.Screen name="admin/anuncios" options={{ title: "Anúncios" }} />
         <Stack.Screen name="admin/categorias" options={{ title: "Categorias" }} />
         <Stack.Screen name="admin/perguntas" options={{ title: "Perguntas" }} />
+        <Stack.Screen name="admin/repasses" options={{ title: "Repasses" }} />
       </Stack>
     </SafeAreaProvider>
   );
