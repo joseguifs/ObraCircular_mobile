@@ -67,6 +67,21 @@ class UsuariosEndpointsTest(unittest.TestCase):
         self.assertEqual(resposta.status_code, 409)
         self.assertEqual(self.client.get(self.url).json()["email"], "maria@example.com")
 
+    def test_chave_pix_cadastro_e_remocao(self):
+        resposta = self.client.patch(self.url, json={"chave_pix": "  maria@example.com  "})
+        self.assertEqual(resposta.status_code, 200, resposta.text)
+        self.assertEqual(resposta.json()["chave_pix"], "maria@example.com")
+        self.assertEqual(self.client.get(self.url).json()["chave_pix"], "maria@example.com")
+
+        # Campo vazio remove a chave cadastrada.
+        self.assertIsNone(self.client.patch(self.url, json={"chave_pix": "  "}).json()["chave_pix"])
+        self.assertIsNone(self.db.get(Usuario, self.usuario_id).chave_pix)
+
+    def test_chave_pix_invalida(self):
+        for chave in ("chave com espaco", "a" * 78, 123):
+            with self.subTest(chave=chave):
+                self.assertEqual(self.client.patch(self.url, json={"chave_pix": chave}).status_code, 422)
+
     def test_campos_invalidos(self):
         for dados in ({"nome": None}, {"email": None}, {"senha": None},
                       {"status": None}, {"senha": "semdigitos"}, {"nome": " "},

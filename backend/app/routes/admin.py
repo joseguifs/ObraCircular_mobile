@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.models.anuncio import Anuncio
 from app.models.anuncio_pergunta import AnuncioPergunta
 from app.models.categoria import Categoria
-from app.models.enums import PapelUsuario, StatusAnuncio, StatusCategoria, StatusUsuario
+from app.models.enums import PapelUsuario, StatusAnuncio, StatusCategoria, StatusRepasse, StatusUsuario
 from app.models.sessao_admin import SessaoAdmin
 from app.models.usuario import Usuario
 from app.routes import categorias as rotas_categorias
@@ -23,6 +23,8 @@ from app.schemas.admin import (
     AnuncioAdminResposta,
     CategoriaAdminResposta,
     PerguntaAdminResposta,
+    RepasseAdminPagamento,
+    RepasseAdminResposta,
     ResumoAdmin,
     SessaoAdminResposta,
     UsuarioAdminAtualizacao,
@@ -33,6 +35,7 @@ from app.schemas.anuncio_pergunta import AnuncioPerguntaResponse
 from app.schemas.auth import LoginCredenciais
 from app.schemas.categoria import CategoriaCreate, CategoriaResponse, CategoriaUpdate
 from app.schemas.usuario import UsuarioResposta
+from app.services.repasses import RepasseService
 
 
 router = APIRouter()
@@ -189,6 +192,7 @@ def obter_resumo(_: SessaoAtual, db: DbSession) -> dict:
             "inativas": categorias.get(StatusCategoria.INATIVA, 0),
         },
         "perguntas": {"total": perguntas, "sem_resposta": sem_resposta},
+        "repasses": RepasseService(db).resumo(),
     }
 
 
@@ -582,3 +586,30 @@ def remover_resposta_admin(pergunta_id: UUID, _: SessaoAtual, db: DbSession) -> 
 
     linha = db.execute(consulta_perguntas_admin().where(AnuncioPergunta.id == pergunta_id)).one()
     return montar_pergunta_admin(*linha)
+
+
+# ---------------------------------------------------------------------------
+# Repasses
+# ---------------------------------------------------------------------------
+
+
+@router.get("/repasses", response_model=list[RepasseAdminResposta])
+def listar_repasses_admin(
+    _: SessaoAtual,
+    db: DbSession,
+    situacao: Annotated[StatusRepasse | None, Query(alias="status")] = None,
+    limite: int = LIMITE_LISTAGEM,
+) -> list[RepasseAdminResposta]:
+    """Vendas pagas com Pix a repassar aos vendedores e os repasses já feitos."""
+
+    return RepasseService(db).listar(situacao, limite)
+
+
+@router.post("/repasses/{pedido_id}/pagar", response_model=RepasseAdminResposta)
+def pagar_repasse_admin(
+    pedido_id: UUID, sessao: SessaoAtual, db: DbSession, dados: RepasseAdminPagamento | None = None
+) -> RepasseAdminResposta:
+    """Registra que a transferência ao vendedor já foi feita pela conta do Mercado Pago."""
+
+    observacao = dados.observacao if dados else None
+    return RepasseService(db).marcar_como_pago(pedido_id, sessao.usuario_id, observacao)

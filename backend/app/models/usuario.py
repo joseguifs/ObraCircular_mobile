@@ -41,6 +41,8 @@ class Usuario(Base):
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     telefone: Mapped[str | None] = mapped_column(String(20))
     imagem_url: Mapped[str | None] = mapped_column(Text)
+    # Chave Pix usada pelo admin para repassar ao vendedor o valor das vendas.
+    chave_pix: Mapped[str | None] = mapped_column(String(77))
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'ATIVO'")
     )

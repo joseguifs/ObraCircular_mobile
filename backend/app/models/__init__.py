@@ -4,6 +4,7 @@ from app.models.categoria import Categoria
 from app.models.endereco import Endereco
 from app.models.pagamento import Pagamento
 from app.models.pedido import Pedido
+from app.models.repasse import Repasse
 from app.models.sessao_admin import SessaoAdmin
 from app.models.usuario import Usuario
 
@@ -14,6 +15,7 @@ __all__ = [
     "Endereco",
     "Pagamento",
     "Pedido",
+    "Repasse",
     "SessaoAdmin",
     "Usuario",
 ]
