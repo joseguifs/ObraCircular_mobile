@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routes import admin, anuncio_perguntas, anuncios, auth, categorias, enderecos, health, usuarios
+from app.routes import admin, anuncio_perguntas, anuncios, auth, categorias, enderecos, health, pagamentos, usuarios
 
 
 api_router = APIRouter()
@@ -16,3 +16,5 @@ api_router.include_router(
     prefix="/api/v1/anuncios",
     tags=["Perguntas dos anuncios"],
 )
+api_router.include_router(pagamentos.pedidos_router, prefix="/api/v1/pedidos", tags=["Pedidos"])
+api_router.include_router(pagamentos.webhooks_router, prefix="/api/v1/webhooks", tags=["Webhooks"])

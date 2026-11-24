@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.enums import StatusAnuncio
+from app.models.enums import EstadoConservacao, ModalidadeEntrega, StatusAnuncio, UnidadeMaterial
 
 
 class AnuncioBase(BaseModel):
@@ -16,9 +16,18 @@ class AnuncioBase(BaseModel):
     endereco_id: UUID
     preco: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     imagem_url: str | None = Field(default=None, max_length=2048)
-    quantidade: int = Field(ge=0)
+    quantidade: Decimal = Field(ge=0, max_digits=15, decimal_places=3)
+    unidade: UnidadeMaterial = UnidadeMaterial.UNIDADE
+    estado_conservacao: EstadoConservacao = EstadoConservacao.NAO_INFORMADO
+    dimensoes: str | None = Field(default=None, max_length=200)
+    modalidade_entrega: ModalidadeEntrega = ModalidadeEntrega.A_COMBINAR
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("dimensoes", mode="before")
+    @classmethod
+    def normalizar_dimensoes(cls, valor: object) -> object:
+        return (" ".join(valor.split()) or None) if isinstance(valor, str) else valor
 
     @field_validator("titulo", "descricao", mode="before")
     @classmethod
@@ -50,7 +59,11 @@ class AnuncioUpdate(BaseModel):
     endereco_id: UUID | None = None
     preco: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
     imagem_url: str | None = Field(default=None, max_length=2048)
-    quantidade: int | None = Field(default=None, ge=0)
+    quantidade: Decimal | None = Field(default=None, ge=0, max_digits=15, decimal_places=3)
+    unidade: UnidadeMaterial | None = None
+    estado_conservacao: EstadoConservacao | None = None
+    dimensoes: str | None = Field(default=None, max_length=200)
+    modalidade_entrega: ModalidadeEntrega | None = None
     status: StatusAnuncio | None = None
 
     model_config = ConfigDict(extra="forbid")
@@ -67,10 +80,18 @@ class AnuncioUpdate(BaseModel):
                 "preco",
                 "quantidade",
                 "status",
+                "unidade",
+                "estado_conservacao",
+                "modalidade_entrega",
             ):
                 if campo in dados and dados[campo] is None:
                     raise ValueError(f"o campo {campo} não pode ser nulo")
         return dados
+
+    @field_validator("dimensoes", mode="before")
+    @classmethod
+    def normalizar_dimensoes(cls, valor: object) -> object:
+        return (" ".join(valor.split()) or None) if isinstance(valor, str) else valor
 
     @field_validator("titulo", "descricao", mode="before")
     @classmethod
@@ -102,7 +123,13 @@ class AnuncioResponse(BaseModel):
     endereco_id: UUID
     preco: Decimal
     imagem_url: str | None
-    quantidade: int
+    quantidade: Decimal
+    unidade: UnidadeMaterial
+    estado_conservacao: EstadoConservacao
+    dimensoes: str | None
+    modalidade_entrega: ModalidadeEntrega
+    cidade: str
+    estado: str
     status: StatusAnuncio
     postado_em: datetime
     atualizado_em: datetime

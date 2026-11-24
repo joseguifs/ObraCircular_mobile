@@ -231,6 +231,20 @@ function ConteudoPerfil({ perfil }: { perfil: PerfilUsuario }) {
         </Pressable>
       </Link>
 
+      <Link
+        href={{ pathname: "/pedidos", params: { usuarioId: usuario.id, nome: usuario.nome } }}
+        asChild
+      >
+        <Pressable accessibilityRole="link" style={styles.linkEditar}>
+          {({ pressed }) => (
+            <View style={[styles.botao, styles.botaoSecundario, pressed ? styles.botaoSecundarioPressionado : null]}>
+              <Ionicons color={cores.acao} name="bag-handle-outline" size={19} />
+              <Text style={[styles.botaoTexto, styles.botaoSecundarioTexto]}>Meus pedidos</Text>
+            </View>
+          )}
+        </Pressable>
+      </Link>
+
       <View style={styles.estatisticas}>
         <Estatistica rotulo="Anúncios" valor={resumo.total} />
         <Estatistica rotulo="Ativos" valor={resumo.ativos} />
@@ -384,6 +398,9 @@ const styles = StyleSheet.create({
     backgroundColor: cores.acao,
   },
   botaoPressionado: { backgroundColor: cores.acaoPressionada },
+  botaoSecundario: { borderWidth: 1, borderColor: cores.acao, backgroundColor: cores.superficie },
+  botaoSecundarioPressionado: { backgroundColor: cores.superficieSuave },
+  botaoSecundarioTexto: { color: cores.acao },
   botaoTexto: { color: cores.superficie, fontSize: 16, fontWeight: "800" },
   cartaoPrincipal: {
     padding: 22,

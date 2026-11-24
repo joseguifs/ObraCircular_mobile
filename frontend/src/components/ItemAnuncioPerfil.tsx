@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { EtiquetaStatus } from "@/components/EtiquetaStatus";
+import { formatarQuantidade } from "@/features/anuncios/materiais";
 import { descreverStatusAnuncio, formatarData, formatarPreco } from "@/features/usuarios/perfil";
 import { Anuncio } from "@/services/anuncios";
 import { cores, raios } from "@/theme/tokens";
@@ -24,7 +25,7 @@ export function ItemAnuncioPerfil({ anuncio }: ItemAnuncioPerfilProps) {
       accessibilityLabel={[
         anuncio.titulo,
         preco,
-        `${anuncio.quantidade} unidades`,
+        formatarQuantidade(anuncio.quantidade, anuncio.unidade),
         status.rotulo,
         publicadoEm ? `publicado em ${publicadoEm}` : null,
       ]
@@ -52,7 +53,7 @@ export function ItemAnuncioPerfil({ anuncio }: ItemAnuncioPerfilProps) {
           {anuncio.titulo}
         </Text>
         <Text style={styles.detalhes}>
-          {preco} · {anuncio.quantidade} un.
+          {preco} · {formatarQuantidade(anuncio.quantidade, anuncio.unidade)}
         </Text>
         <View style={styles.rodape}>
           <EtiquetaStatus rotulo={status.rotulo} tom={status.tom} />

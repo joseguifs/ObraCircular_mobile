@@ -11,7 +11,6 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
-    Integer,
     Numeric,
     String,
     Text,
@@ -39,6 +38,9 @@ class Anuncio(Base):
         ),
         CheckConstraint("preco >= 0", name="preco"),
         CheckConstraint("quantidade >= 0", name="quantidade"),
+        CheckConstraint("unidade IN ('UNIDADE', 'M2', 'M3', 'METRO', 'KG', 'LITRO', 'CAIXA', 'SACO', 'LOTE')", name="unidade"),
+        CheckConstraint("estado_conservacao IN ('NAO_INFORMADO', 'NOVO', 'USADO')", name="estado_conservacao"),
+        CheckConstraint("modalidade_entrega IN ('A_COMBINAR', 'RETIRADA', 'ENTREGA', 'RETIRADA_ENTREGA')", name="modalidade_entrega"),
         CheckConstraint(
             "status IN ('ATIVO', 'ESGOTADO', 'ENCERRADO')",
             name="status",
@@ -81,7 +83,11 @@ class Anuncio(Base):
     endereco_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
     preco: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     imagem_url: Mapped[str | None] = mapped_column(Text)
-    quantidade: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantidade: Mapped[Decimal] = mapped_column(Numeric(15, 3), nullable=False)
+    unidade: Mapped[str] = mapped_column(String(10), nullable=False, server_default=text("'UNIDADE'"))
+    estado_conservacao: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'NAO_INFORMADO'"))
+    dimensoes: Mapped[str | None] = mapped_column(String(200))
+    modalidade_entrega: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'A_COMBINAR'"))
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'ATIVO'")
     )
@@ -108,3 +114,11 @@ class Anuncio(Base):
         foreign_keys=[endereco_id, vendedor_id],
         overlaps="anuncios,vendedor",
     )
+
+    @property
+    def cidade(self) -> str:
+        return self.endereco.cidade
+
+    @property
+    def estado(self) -> str:
+        return self.endereco.estado

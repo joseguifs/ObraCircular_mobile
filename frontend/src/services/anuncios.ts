@@ -1,4 +1,5 @@
 import { requisicaoApi } from "./api";
+import type { EstadoConservacao, ModalidadeEntrega, UnidadeMaterial } from "@/features/anuncios/materiais";
 
 export type StatusAnuncio = "ATIVO" | "ESGOTADO" | "ENCERRADO";
 
@@ -11,7 +12,13 @@ export type Anuncio = {
   endereco_id: string;
   preco: string;
   imagem_url: string | null;
-  quantidade: number;
+  quantidade: string | number;
+  unidade: UnidadeMaterial;
+  estado_conservacao: EstadoConservacao;
+  dimensoes: string | null;
+  modalidade_entrega: ModalidadeEntrega;
+  cidade: string;
+  estado: string;
   status: StatusAnuncio;
   postado_em: string;
   atualizado_em: string;
@@ -27,6 +34,10 @@ export type CriarAnuncio = {
   preco: number;
   imagem_url: string | null;
   quantidade: number;
+  unidade: UnidadeMaterial;
+  estado_conservacao: EstadoConservacao;
+  dimensoes: string | null;
+  modalidade_entrega: ModalidadeEntrega;
 };
 
 export type AtualizarAnuncio = Partial<

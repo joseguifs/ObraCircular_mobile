@@ -18,6 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CampoFormulario } from "@/components/CampoFormulario";
 import { Marca } from "@/components/Marca";
+import { OpcoesFormulario } from "@/components/OpcoesFormulario";
+import { ESTADOS_CONSERVACAO, MODALIDADES_ENTREGA, UNIDADES, formatarQuantidade } from "@/features/anuncios/materiais";
 import { obterIconeCategoria } from "@/features/anuncios/categorias";
 import {
   DadosFormularioAnuncio,
@@ -46,6 +48,10 @@ const estadoInicial: DadosFormularioAnuncio = {
   preco: "",
   quantidade: "1",
   imagemUrl: "",
+  unidade: "UNIDADE",
+  estadoConservacao: "",
+  dimensoes: "",
+  modalidadeEntrega: "",
 };
 
 const enderecoInicial: DadosEndereco = {
@@ -279,6 +285,19 @@ export default function NovoAnuncioScreen() {
                   value={dados.descricao}
                 />
               </CampoFormulario>
+              <OpcoesFormulario rotulo="Estado de conservação" opcoes={ESTADOS_CONSERVACAO} valor={dados.estadoConservacao} erro={erros.estadoConservacao} disabled={enviando} onChange={(valor) => atualizar("estadoConservacao", valor)} />
+              <CampoFormulario error={erros.dimensoes} icon="resize-outline" label="Dimensões" optional>
+                <TextInput
+                  accessibilityLabel="Dimensões do material"
+                  editable={!enviando}
+                  maxLength={200}
+                  onChangeText={(valor) => atualizar("dimensoes", valor)}
+                  placeholder="Ex.: 60 × 60 cm; espessura de 8 mm"
+                  placeholderTextColor={cores.textoSuave}
+                  style={styles.input}
+                  value={dados.dimensoes}
+                />
+              </CampoFormulario>
             </View>
 
             <View style={styles.section}>
@@ -288,13 +307,13 @@ export default function NovoAnuncioScreen() {
                 </View>
                 <View style={styles.sectionHeadingText}>
                   <Text style={styles.sectionTitle}>Preço e disponibilidade</Text>
-                  <Text style={styles.sectionSubtitle}>Use R$ 0,00 quando o material for doação.</Text>
+                  <Text style={styles.sectionSubtitle}>Informe o preço total da quantidade anunciada. Use R$ 0,00 para doação.</Text>
                 </View>
               </View>
 
               <View style={styles.inlineFields}>
                 <View style={styles.flexField}>
-                  <CampoFormulario error={erros.preco} icon="cash-outline" label="Preço">
+                  <CampoFormulario error={erros.preco} icon="cash-outline" label="Preço total">
                     <TextInput
                       accessibilityLabel="Preço do anúncio"
                       inputMode="numeric"
@@ -312,10 +331,10 @@ export default function NovoAnuncioScreen() {
                   <CampoFormulario error={erros.quantidade} icon="cube-outline" label="Quantidade">
                     <TextInput
                       accessibilityLabel="Quantidade disponível"
-                      inputMode="numeric"
-                      keyboardType="number-pad"
-                      maxLength={6}
-                      onChangeText={(valor) => atualizar("quantidade", valor.replace(/\D/g, ""))}
+                      inputMode="decimal"
+                      keyboardType="decimal-pad"
+                      maxLength={16}
+                      onChangeText={(valor) => atualizar("quantidade", valor)}
                       placeholder="1"
                       placeholderTextColor={cores.textoSuave}
                       returnKeyType="next"
@@ -325,6 +344,9 @@ export default function NovoAnuncioScreen() {
                   </CampoFormulario>
                 </View>
               </View>
+
+              <OpcoesFormulario rotulo="Unidade de medida" opcoes={UNIDADES} valor={dados.unidade} erro={erros.unidade} disabled={enviando} onChange={(valor) => atualizar("unidade", valor)} />
+              <OpcoesFormulario rotulo="Retirada ou entrega" opcoes={MODALIDADES_ENTREGA} valor={dados.modalidadeEntrega} erro={erros.modalidadeEntrega} disabled={enviando} onChange={(valor) => atualizar("modalidadeEntrega", valor)} />
 
               <CampoFormulario error={erros.imagemUrl} icon="image-outline" label="URL da imagem" optional>
                 <TextInput
@@ -482,7 +504,7 @@ export default function NovoAnuncioScreen() {
                   {dados.titulo.trim() || "Seu material aparecerá aqui"}
                 </Text>
                 <Text style={styles.previewMeta}>
-                  {categoriaSelecionada?.nome ?? "Sem categoria"} · {dados.preco || "Preço não informado"} · {dados.quantidade || "0"} un.
+                  {categoriaSelecionada?.nome ?? "Sem categoria"} · {dados.preco || "Preço não informado"} · {formatarQuantidade(dados.quantidade || "0", dados.unidade)}
                 </Text>
               </View>
             </View>

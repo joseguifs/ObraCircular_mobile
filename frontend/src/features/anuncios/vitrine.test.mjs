@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { FILTROS_INICIAIS, filtrarVitrine } from "./vitrine.ts";
+import { FILTROS_INICIAIS, chaveCidade, filtrarVitrine, listarCidades } from "./vitrine.ts";
 
 const categorias = [
   { id: "pisos", nome: "Pisos e revestimentos" },
@@ -106,4 +106,32 @@ test("não altera a lista original nem os filtros ao ordenar", () => {
 test("funciona sem anúncios ou sem categorias carregadas", () => {
   assert.deepEqual(selecionar({}, []), { anuncios: [], erroPreco: null });
   assert.deepEqual(ids(filtrarVitrine(anuncios, [], { ...FILTROS_INICIAIS, busca: "ceramico" })), ["piso"]);
+});
+
+const anunciosComCidade = [
+  { ...anuncios[0], cidade: "Palmas", estado: "TO" },
+  { ...anuncios[1], cidade: "Palmas", estado: "PR" },
+  { ...anuncios[2], cidade: "São Luís", estado: "MA" },
+  { ...anuncios[0], id: "duplicado", cidade: " SAO   LUIS ", estado: "ma" },
+  { ...anuncios[3], cidade: "Araguaína", estado: "TO" },
+  { ...anuncios[0], id: "sem-localizacao" },
+];
+
+test("seleciona cidade e UF sem confundir cidades homônimas", () => {
+  assert.deepEqual(ids(selecionar({ cidade: chaveCidade("Palmas", "TO") }, anunciosComCidade)), ["piso"]);
+  assert.deepEqual(ids(selecionar({ cidade: chaveCidade("Palmas", "PR"), somenteDoacoes: true }, anunciosComCidade)), ["doacao"]);
+  assert.deepEqual(ids(selecionar({ cidade: chaveCidade("Palmas", "TO"), categoriaId: "hidraulica" }, anunciosComCidade)), []);
+  assert.deepEqual(ids(selecionar({ cidade: chaveCidade("São Luís", "MA"), precoMaximo: "60" }, anunciosComCidade)), ["torneira"]);
+  assert.equal(selecionar({}, anunciosComCidade).anuncios.length, 5);
+});
+
+test("cidades vêm dos anúncios ativos, ignoram acentos e não dependem dos demais filtros", () => {
+  assert.deepEqual(listarCidades(anunciosComCidade), [
+    { valor: "palmas/pr", rotulo: "Palmas/PR" },
+    { valor: "palmas/to", rotulo: "Palmas/TO" },
+    { valor: "sao luis/ma", rotulo: "São Luís/MA" },
+  ]);
+  assert.equal(chaveCidade(" ", "TO"), null);
+  assert.deepEqual(listarCidades([]), []);
+  assert.deepEqual(selecionar({ cidade: "inexistente/to" }, anunciosComCidade).anuncios, []);
 });

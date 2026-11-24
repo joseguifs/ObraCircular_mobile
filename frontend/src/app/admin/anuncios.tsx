@@ -15,6 +15,7 @@ import {
   MensagemErro,
 } from "@/components/admin/ComponentesAdmin";
 import { EtiquetaStatus } from "@/components/EtiquetaStatus";
+import { formatarQuantidade } from "@/features/anuncios/materiais";
 import {
   AcaoAnuncio,
   acoesQueExigemConfirmacao,
@@ -154,7 +155,7 @@ export default function AnunciosAdminScreen() {
                     {anuncio.vendedor_nome} · {anuncio.categoria_nome}
                   </Text>
                   <Text style={estilosAdmin.detalhe}>
-                    {anuncio.quantidade} un. · postado em {formatarData(anuncio.postado_em) ?? "-"}
+                    {formatarQuantidade(anuncio.quantidade, anuncio.unidade)} · postado em {formatarData(anuncio.postado_em) ?? "-"}
                   </Text>
                 </View>
               </View>

@@ -3,6 +3,7 @@ export type OrdenacaoVitrine = "recentes" | "menor-preco" | "maior-preco";
 export type FiltrosVitrine = {
   busca: string;
   categoriaId: string | null;
+  cidade: string | null;
   precoMinimo: string;
   precoMaximo: string;
   somenteDoacoes: boolean;
@@ -12,6 +13,7 @@ export type FiltrosVitrine = {
 export const FILTROS_INICIAIS: FiltrosVitrine = {
   busca: "",
   categoriaId: null,
+  cidade: null,
   precoMinimo: "",
   precoMaximo: "",
   somenteDoacoes: false,
@@ -25,10 +27,29 @@ type AnuncioVitrine = {
   preco: string;
   status: string;
   postado_em: string;
+  cidade?: string | null;
+  estado?: string | null;
 };
 
 function normalizarBusca(texto: string) {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim().replace(/\s+/g, " ");
+}
+
+export type CidadeVitrine = { valor: string; rotulo: string };
+
+export function chaveCidade(cidade?: string | null, estado?: string | null): string | null {
+  return cidade?.trim() && estado?.trim() ? `${normalizarBusca(cidade)}/${normalizarBusca(estado)}` : null;
+}
+
+export function listarCidades(anuncios: AnuncioVitrine[]): CidadeVitrine[] {
+  const cidades = new Map<string, CidadeVitrine>();
+  for (const anuncio of anuncios) {
+    const valor = chaveCidade(anuncio.cidade, anuncio.estado);
+    if (anuncio.status === "ATIVO" && valor && !cidades.has(valor)) {
+      cidades.set(valor, { valor, rotulo: `${anuncio.cidade!.trim().replace(/\s+/g, " ")}/${anuncio.estado!.trim().toUpperCase()}` });
+    }
+  }
+  return [...cidades.values()].sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR"));
 }
 
 // Campos vazios não limitam a faixa; valores brasileiros são comparados em centavos.
@@ -59,6 +80,7 @@ export function filtrarVitrine<T extends AnuncioVitrine>(
   const termo = normalizarBusca(filtros.busca);
   const resultado = anuncios.filter((anuncio) => {
     if (anuncio.status !== "ATIVO") return false;
+    if (filtros.cidade && chaveCidade(anuncio.cidade, anuncio.estado) !== filtros.cidade) return false;
     if (filtros.categoriaId && anuncio.categoria_id !== filtros.categoriaId) return false;
     const preco = Math.round(Number(anuncio.preco) * 100);
     if (!Number.isSafeInteger(preco) || preco < 0) return false;

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 
-import { FiltrosVitrine as Filtros, OrdenacaoVitrine } from "@/features/anuncios/vitrine";
+import { CidadeVitrine, FiltrosVitrine as Filtros, OrdenacaoVitrine } from "@/features/anuncios/vitrine";
+import { SeletorCidade } from "@/components/SeletorCidade";
 import { cores, raios } from "@/theme/tokens";
 
 const ORDENACOES: { valor: OrdenacaoVitrine; rotulo: string }[] = [
@@ -12,12 +13,14 @@ const ORDENACOES: { valor: OrdenacaoVitrine; rotulo: string }[] = [
 type Props = {
   filtros: Filtros;
   erroPreco: string | null;
+  cidades: CidadeVitrine[];
   onChange: (alteracoes: Partial<Filtros>) => void;
 };
 
-export function FiltrosVitrine({ filtros, erroPreco, onChange }: Props) {
+export function FiltrosVitrine({ filtros, erroPreco, cidades, onChange }: Props) {
   return (
     <View style={styles.painel}>
+      <SeletorCidade cidades={cidades} cidade={filtros.cidade} onChange={(cidade) => onChange({ cidade })} />
       <View style={styles.linha}>
         {(["precoMinimo", "precoMaximo"] as const).map((campo) => {
           const rotulo = campo === "precoMinimo" ? "Preço mínimo (R$)" : "Preço máximo (R$)";
