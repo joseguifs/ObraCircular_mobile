@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import { ErroApi, requisicaoApi } from "./api";
 import { Anuncio, StatusAnuncio } from "./anuncios";
 import { Categoria } from "./categorias";
+import type { StatusRepasse } from "@/features/admin/repasses";
 import { PerguntaAnuncio } from "./perguntas";
 import { PapelUsuario, StatusUsuario, Usuario } from "./usuarios";
 
@@ -67,6 +68,7 @@ export type ResumoAdmin = {
   anuncios: { total: number; ativos: number; esgotados: number; encerrados: number; excluidos: number };
   categorias: { total: number; ativas: number; inativas: number };
   perguntas: { total: number; sem_resposta: number };
+  repasses: { pendentes: number; pagos: number; alertas: number };
 };
 
 export type UsuarioAdmin = Usuario & { deletado_em: string | null; total_anuncios: number };
@@ -80,6 +82,34 @@ export type PerguntaAdmin = PerguntaAnuncio & {
   anuncio_titulo: string;
   autor_nome: string;
   vendedor_nome: string;
+};
+
+export type { StatusRepasse } from "@/features/admin/repasses";
+
+/** Venda paga com Pix e a situação do repasse ao vendedor. Valores monetários chegam como texto. */
+export type RepasseAdmin = {
+  pedido_id: string;
+  repasse_id: string | null;
+  titulo: string;
+  anuncio_id: string;
+  comprador_id: string;
+  pedido_status: string;
+  vendedor_id: string;
+  vendedor_nome: string;
+  vendedor_email: string;
+  vendedor_telefone: string | null;
+  chave_pix: string | null;
+  valor_bruto: string;
+  taxa_marketplace: string;
+  valor_liquido: string;
+  status: StatusRepasse;
+  pedido_pago_em: string | null;
+  pagamento_externo_id: string | null;
+  pagamento_aprovado_em: string | null;
+  repassado_em: string | null;
+  observacao: string | null;
+  admin_id: string | null;
+  alerta_reembolso: boolean;
 };
 
 export async function entrarComoAdmin(email: string, senha: string): Promise<Usuario> {
@@ -203,5 +233,16 @@ export function excluirPerguntaAdmin(perguntaId: string) {
 export function removerRespostaAdmin(perguntaId: string) {
   return requisicaoAdmin<PerguntaAdmin>(`/perguntas/${encodeURIComponent(perguntaId)}/resposta`, {
     method: "DELETE",
+  });
+}
+
+export function listarRepassesAdmin(filtros: { status?: StatusRepasse | null }) {
+  return requisicaoAdmin<RepasseAdmin[]>(`/repasses${montarConsulta(filtros)}`);
+}
+
+export function marcarRepasseComoPago(pedidoId: string, observacao: string | null) {
+  return requisicaoAdmin<RepasseAdmin>(`/repasses/${encodeURIComponent(pedidoId)}/pagar`, {
+    method: "POST",
+    body: JSON.stringify({ observacao }),
   });
 }

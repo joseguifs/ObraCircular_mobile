@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.enums import PapelUsuario, StatusAnuncio, StatusUsuario
+from app.models.enums import PapelUsuario, StatusAnuncio, StatusPedido, StatusRepasse, StatusUsuario
 from app.schemas.anuncio import AnuncioResponse
 from app.schemas.anuncio_pergunta import AnuncioPerguntaResponse
 from app.schemas.categoria import CategoriaResponse
@@ -44,11 +46,19 @@ class ResumoPerguntas(BaseModel):
     sem_resposta: int
 
 
+class ResumoRepasses(BaseModel):
+    pendentes: int
+    pagos: int
+    # Repasses já feitos cujo pedido foi reembolsado depois.
+    alertas: int
+
+
 class ResumoAdmin(BaseModel):
     usuarios: ResumoUsuarios
     anuncios: ResumoAnuncios
     categorias: ResumoCategorias
     perguntas: ResumoPerguntas
+    repasses: ResumoRepasses
 
 
 class UsuarioAdminResposta(UsuarioResposta):
@@ -92,3 +102,52 @@ class PerguntaAdminResposta(AnuncioPerguntaResponse):
     anuncio_titulo: str
     autor_nome: str
     vendedor_nome: str
+
+
+class RepasseAdminResposta(BaseModel):
+    """Venda paga com Pix e a situação do repasse ao vendedor."""
+
+    pedido_id: uuid.UUID
+    # Nulo enquanto o repasse ainda não foi registrado.
+    repasse_id: uuid.UUID | None
+    titulo: str
+    anuncio_id: uuid.UUID
+    comprador_id: uuid.UUID
+    pedido_status: StatusPedido
+    vendedor_id: uuid.UUID
+    vendedor_nome: str
+    vendedor_email: str
+    vendedor_telefone: str | None
+    chave_pix: str | None
+    valor_bruto: Decimal
+    taxa_marketplace: Decimal
+    valor_liquido: Decimal
+    status: StatusRepasse
+    # Data em que o comprador pagou o pedido.
+    pedido_pago_em: datetime | None
+    # Id do pagamento no Mercado Pago, para conferir no painel.
+    pagamento_externo_id: str | None
+    pagamento_aprovado_em: datetime | None
+    # Data em que o admin marcou o repasse como feito.
+    repassado_em: datetime | None
+    observacao: str | None
+    admin_id: uuid.UUID | None
+    # O valor já saiu da conta, mas o pedido foi reembolsado ao comprador depois.
+    alerta_reembolso: bool
+
+
+class RepasseAdminPagamento(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    observacao: str | None = Field(
+        default=None,
+        max_length=255,
+        description="Ex.: identificador do comprovante da transferência",
+    )
+
+    @field_validator("observacao", mode="before")
+    @classmethod
+    def normalizar_observacao(cls, observacao: object) -> object:
+        if isinstance(observacao, str):
+            return observacao.strip() or None
+        return observacao

@@ -107,6 +107,30 @@ class UsuarioAtualizacao(UsuarioCriacao):
     senha: str | None = Field(default=None, min_length=8, max_length=72)
     status: StatusUsuario | None = None
     imagem_url: str | None = Field(default=None, max_length=7_000_000)
+    chave_pix: str | None = Field(
+        default=None,
+        max_length=77,
+        description="Chave Pix (CPF, CNPJ, e-mail, telefone ou aleatória) para receber os repasses",
+    )
+
+    @field_validator("chave_pix", mode="before")
+    @classmethod
+    def validar_chave_pix(cls, chave: object) -> object:
+        if chave is None:
+            return None
+        if not isinstance(chave, str):
+            raise ValueError("a chave Pix deve ser informada como texto")
+
+        # Campo vazio remove a chave cadastrada.
+        chave = chave.strip()
+        if not chave:
+            return None
+
+        # Nenhum tipo de chave Pix possui espaços no meio.
+        if any(caractere.isspace() for caractere in chave):
+            raise ValueError("a chave Pix não pode conter espaços")
+
+        return chave
 
     @field_validator("imagem_url")
     @classmethod
@@ -131,6 +155,7 @@ class UsuarioResposta(BaseModel):
     email: EmailStr
     telefone: str | None
     imagem_url: str | None = None
+    chave_pix: str | None = None
     status: StatusUsuario
     papel: PapelUsuario = PapelUsuario.USUARIO
     criado_em: datetime

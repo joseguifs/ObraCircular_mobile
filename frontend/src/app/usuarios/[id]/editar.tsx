@@ -46,7 +46,12 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
   const router = useRouter();
   const idValido = ehIdentificadorValido(usuarioId);
   const [estado, setEstado] = useState<EstadoEdicao>({ situacao: "carregando" });
-  const [dados, setDados] = useState<DadosEdicaoUsuario>({ nome: "", email: "", telefone: "" });
+  const [dados, setDados] = useState<DadosEdicaoUsuario>({
+    nome: "",
+    email: "",
+    telefone: "",
+    chave_pix: "",
+  });
   const [erros, setErros] = useState<ErrosEdicaoUsuario>({});
   const [mensagemApi, setMensagemApi] = useState<string | null>(null);
   const [sucesso, setSucesso] = useState(false);
@@ -58,6 +63,7 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
   const montado = useRef(false);
   const emailRef = useRef<TextInput>(null);
   const telefoneRef = useRef<TextInput>(null);
+  const chavePixRef = useRef<TextInput>(null);
 
   useEffect(() => {
     montado.current = true;
@@ -77,6 +83,7 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
           nome: usuario.nome,
           email: usuario.email,
           telefone: formatarTelefone(usuario.telefone) ?? "",
+          chave_pix: usuario.chave_pix ?? "",
         });
       })
       .catch((error: unknown) => {
@@ -169,6 +176,7 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
         nome: usuario.nome,
         email: usuario.email,
         telefone: formatarTelefone(usuario.telefone) ?? "",
+        chave_pix: usuario.chave_pix ?? "",
       });
       setImagem(undefined);
       setSucesso(true);
@@ -365,16 +373,43 @@ function EdicaoUsuario({ usuarioId }: { usuarioId: string }) {
                       keyboardType="phone-pad"
                       maxLength={20}
                       onChangeText={(valor) => atualizar("telefone", valor)}
-                      onSubmitEditing={salvar}
+                      onSubmitEditing={() => chavePixRef.current?.focus()}
                       placeholder="(63) 99999-9999"
                       placeholderTextColor={cores.textoSuave}
-                      returnKeyType="done"
+                      returnKeyType="next"
                       style={styles.input}
                       value={dados.telefone}
                     />
                   </CampoFormulario>
                   <Text style={styles.dica}>
                     O telefone é opcional. Deixe o campo vazio para removê-lo.
+                  </Text>
+                  <CampoFormulario
+                    error={erros.chave_pix}
+                    icon="key-outline"
+                    label="Chave Pix"
+                    optional
+                  >
+                    <TextInput
+                      ref={chavePixRef}
+                      accessibilityLabel="Chave Pix (opcional)"
+                      accessibilityHint={erros.chave_pix ?? "Apague a chave para removê-la."}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!enviando}
+                      maxLength={77}
+                      onChangeText={(valor) => atualizar("chave_pix", valor)}
+                      onSubmitEditing={salvar}
+                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                      placeholderTextColor={cores.textoSuave}
+                      returnKeyType="done"
+                      style={styles.input}
+                      value={dados.chave_pix}
+                    />
+                  </CampoFormulario>
+                  <Text style={styles.dica}>
+                    É para essa chave que a Obra Circular transfere o valor das suas vendas pagas com Pix,
+                    já descontada a taxa da plataforma.
                   </Text>
                   {mensagemApi ? (
                     <View

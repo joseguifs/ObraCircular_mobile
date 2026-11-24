@@ -15,6 +15,9 @@ from app.models.anuncio import Anuncio
 from app.models.anuncio_pergunta import AnuncioPergunta
 from app.models.categoria import Categoria
 from app.models.endereco import Endereco
+from app.models.pagamento import Pagamento
+from app.models.pedido import Pedido
+from app.models.repasse import Repasse
 from app.models.sessao_admin import SessaoAdmin
 from app.models.usuario import Usuario
 from app.routes.admin import router
@@ -55,6 +58,8 @@ class AdminEndpointsTest(unittest.TestCase):
         Anuncio.__table__.create(self.engine)
         SessaoAdmin.__table__.create(self.engine)
         AnuncioPergunta.__table__.create(self.engine)
+        for modelo in (Pedido, Pagamento, Repasse):
+            modelo.__table__.create(self.engine)
         self.db = Session(self.engine)
 
         self.admin_id = uuid4()
@@ -134,7 +139,7 @@ class AdminEndpointsTest(unittest.TestCase):
         self.assertNotIn(sessao.token_hash, cabecalho["Authorization"])
 
     def test_rotas_exigem_token_valido(self):
-        for caminho in ("/me", "/resumo", "/usuarios", "/anuncios", "/categorias", "/perguntas"):
+        for caminho in ("/me", "/resumo", "/usuarios", "/anuncios", "/categorias", "/perguntas", "/repasses"):
             with self.subTest(caminho=caminho):
                 self.assertEqual(self.client.get(f"/api/v1/admin{caminho}").status_code, 401)
                 resposta = self.client.get(
@@ -168,6 +173,7 @@ class AdminEndpointsTest(unittest.TestCase):
         self.assertEqual(resumo["anuncios"]["ativos"], 1)
         self.assertEqual(resumo["categorias"]["ativas"], 2)
         self.assertEqual(resumo["perguntas"], {"total": 2, "sem_resposta": 1})
+        self.assertEqual(resumo["repasses"], {"pendentes": 0, "pagos": 0, "alertas": 0})
 
     def test_gestao_de_usuarios(self):
         cabecalho = self.entrar()

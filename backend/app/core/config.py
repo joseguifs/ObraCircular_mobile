@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import lru_cache
 
 from pydantic import AliasChoices, Field, SecretStr, field_validator
@@ -43,6 +44,10 @@ class Settings(BaseSettings):
             "OBRA_CIRCULAR_MP_CHECKOUT_MINUTES",
             "OBRA_CIRCULAR_STOCK_RESERVATION_MINUTES",
         ),
+    )
+    # Percentual que a Obra Circular retém de cada venda antes do repasse ao vendedor.
+    marketplace_fee_percent: Decimal = Field(
+        default=Decimal("20"), ge=0, le=100, validation_alias=_env("MARKETPLACE_FEE_PERCENT")
     )
     mercado_pago_api_url: str = Field(
         default="https://api.mercadopago.com", validation_alias=_env("MERCADO_PAGO_API_URL")

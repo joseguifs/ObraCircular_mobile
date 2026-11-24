@@ -16,6 +16,7 @@ export type Usuario = {
   email: string;
   telefone: string | null;
   imagem_url: string | null;
+  chave_pix: string | null;
   status: StatusUsuario;
   papel: PapelUsuario;
   criado_em: string;
@@ -49,7 +50,7 @@ export async function autenticarUsuario(dados: LoginCredenciais): Promise<Usuari
   });
 }
 
-export type AtualizacaoUsuario = Partial<Pick<Usuario, "nome" | "email" | "telefone" | "imagem_url">>;
+export type AtualizacaoUsuario = Partial<Pick<Usuario, "nome" | "email" | "telefone" | "imagem_url" | "chave_pix">>;
 
 export function atualizarUsuario(usuarioId: string, dados: AtualizacaoUsuario): Promise<Usuario> {
   return requisicaoApi<Usuario>(`/api/v1/usuarios/${encodeURIComponent(usuarioId)}`, {

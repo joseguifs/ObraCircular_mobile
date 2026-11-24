@@ -94,6 +94,16 @@ export default function PainelAdminScreen() {
         { valor: resumo.perguntas.total - resumo.perguntas.sem_resposta, rotulo: "respondidas" },
       ],
     },
+    {
+      titulo: "Repasses",
+      icone: "wallet-outline",
+      rota: "/admin/repasses",
+      principal: { valor: resumo.repasses.pendentes, rotulo: "a repassar" },
+      detalhes: [
+        { valor: resumo.repasses.pagos, rotulo: "repassados" },
+        { valor: resumo.repasses.alertas, rotulo: "reembolsados após repasse" },
+      ],
+    },
   ];
 
   return (

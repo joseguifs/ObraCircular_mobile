@@ -7,6 +7,7 @@ const usuario = {
   nome: "Matheus Felipe",
   email: "matheus@example.com",
   telefone: "+5563999998888",
+  chave_pix: "matheus@example.com",
 };
 const dados = { ...usuario, telefone: "(63) 99999-8888" };
 
@@ -21,6 +22,7 @@ test("normaliza espaços do nome, caixa do e-mail e telefone brasileiro", () => 
       nome: "  Matheus   Felipe  ",
       email: " MATHEUS@EXAMPLE.COM ",
       telefone: "(63) 99999-8888",
+      chave_pix: "  matheus@example.com  ",
     }),
     usuario,
   );
@@ -108,4 +110,22 @@ test("PATCH inclui somente dados básicos alterados, sem senha, status ou id", (
   assert.deepEqual(obterAlteracoesUsuario({ ...dados, email: " NOVO@example.com " }, usuario), {
     email: "novo@example.com",
   });
+});
+
+test("aceita os tipos de chave Pix e rejeita espaços no meio ou tamanho acima do backend", () => {
+  for (const chave_pix of ["12345678901", "12.345.678/0001-90", "+5563999998888", "matheus@example.com",
+    "123e4567-e89b-12d3-a456-426614174000", "a".repeat(77), ""]) {
+    assert.equal(validarEdicaoUsuario({ ...dados, chave_pix }).chave_pix, undefined);
+  }
+  for (const chave_pix of ["chave com espaco", "a".repeat(78)]) {
+    assert.ok(validarEdicaoUsuario({ ...dados, chave_pix }).chave_pix);
+  }
+});
+
+test("envia a chave Pix alterada e null quando o usuário a remove", () => {
+  assert.deepEqual(obterAlteracoesUsuario({ ...dados, chave_pix: " nova@example.com " }, usuario), {
+    chave_pix: "nova@example.com",
+  });
+  assert.deepEqual(obterAlteracoesUsuario({ ...dados, chave_pix: "  " }, usuario), { chave_pix: null });
+  assert.deepEqual(obterAlteracoesUsuario({ ...dados, chave_pix: "" }, { ...usuario, chave_pix: null }), {});
 });
