@@ -376,3 +376,16 @@ Configuração (`backend/.env`, veja `.env.example`). Os mesmos nomes com prefix
 - `MP_LIVE_MODE`: `true` somente em produção.
 
 Depois de configurar, aplique a migration com `alembic upgrade head`.
+
+### Repasses aos vendedores (painel admin)
+
+O Pix do comprador cai na conta do Mercado Pago da Obra Circular. O repasse ao vendedor é feito manualmente pelo admin, que transfere o valor líquido para a chave Pix do vendedor e depois registra a transferência no painel.
+
+- O vendedor cadastra a chave Pix (CPF, CNPJ, e-mail, telefone ou chave aleatória) em "Editar dados" no perfil, enviada como `chave_pix` em `PATCH /api/v1/usuarios/{id}`. Campo vazio remove a chave.
+- `GET /api/v1/admin/repasses?status=PENDENTE|PAGO` lista as vendas pagas, das mais antigas para as mais recentes, com vendedor, chave Pix, valor bruto, taxa, valor líquido e o id do pagamento no Mercado Pago para conferência. Pedidos pagos ainda sem repasse aparecem como `PENDENTE`. Pedidos reembolsados, cancelados ou expirados não entram na fila.
+- `POST /api/v1/admin/repasses/{pedido_id}/pagar` registra o repasse como feito, com uma `observacao` opcional (ex.: id do comprovante). Exige pedido pago e chave Pix cadastrada, e não permite registrar o mesmo pedido duas vezes.
+- A taxa da Obra Circular vem de `MARKETPLACE_FEE_PERCENT` (padrão 20%). Os valores ficam gravados no repasse, então mudar a taxa depois não altera o histórico.
+- O repasse fica liberado logo após o pagamento, já que o app ainda não tem confirmação de entrega.
+- Se um pedido for reembolsado depois do repasse, ele aparece com `alerta_reembolso: true` e é contado em `repasses.alertas` no resumo do painel, porque o valor já saiu da conta.
+
+Aplique a migration com `alembic upgrade head` para criar a tabela `repasses` e a coluna `usuarios.chave_pix`.
