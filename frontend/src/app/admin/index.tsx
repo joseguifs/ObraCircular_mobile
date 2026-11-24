@@ -84,6 +84,16 @@ export default function PainelAdminScreen() {
         { valor: resumo.categorias.inativas, rotulo: "inativas" },
       ],
     },
+    {
+      titulo: "Perguntas",
+      icone: "chatbubbles-outline",
+      rota: "/admin/perguntas",
+      principal: { valor: resumo.perguntas.total, rotulo: "feitas" },
+      detalhes: [
+        { valor: resumo.perguntas.sem_resposta, rotulo: "sem resposta" },
+        { valor: resumo.perguntas.total - resumo.perguntas.sem_resposta, rotulo: "respondidas" },
+      ],
+    },
   ];
 
   return (

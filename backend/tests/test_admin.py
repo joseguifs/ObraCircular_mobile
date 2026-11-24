@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.security import gerar_hash_senha
 from app.db.session import get_db
 from app.models.anuncio import Anuncio
+from app.models.anuncio_pergunta import AnuncioPergunta
 from app.models.categoria import Categoria
 from app.models.endereco import Endereco
 from app.models.sessao_admin import SessaoAdmin
@@ -53,6 +54,7 @@ class AdminEndpointsTest(unittest.TestCase):
             )
         Anuncio.__table__.create(self.engine)
         SessaoAdmin.__table__.create(self.engine)
+        AnuncioPergunta.__table__.create(self.engine)
         self.db = Session(self.engine)
 
         self.admin_id = uuid4()
@@ -80,6 +82,24 @@ class AdminEndpointsTest(unittest.TestCase):
             Anuncio(id=self.anuncio_id, titulo="Sobras de piso", descricao="Caixas fechadas da reforma.",
                     categoria_id=self.categoria_id, vendedor_id=self.usuario_id,
                     endereco_id=endereco_id, preco=Decimal("100"), quantidade=3, status="ATIVO")
+        )
+        self.db.flush()
+        self.comprador_id = uuid4()
+        self.pergunta_id = uuid4()
+        self.respondida_id = uuid4()
+        self.db.add(
+            Usuario(id=self.comprador_id, nome="João Souza", email="joao@example.com",
+                    senha_hash=gerar_hash_senha(SENHA), papel="USUARIO", status="ATIVO")
+        )
+        self.db.flush()
+        self.db.add_all(
+            [
+                AnuncioPergunta(id=self.pergunta_id, anuncio_id=self.anuncio_id, autor_id=self.comprador_id,
+                                pergunta="Ainda está disponível?", criado_em=agora),
+                AnuncioPergunta(id=self.respondida_id, anuncio_id=self.anuncio_id, autor_id=self.comprador_id,
+                                pergunta="Aceita troca?", resposta="Não, obrigado.",
+                                respondido_em=agora, criado_em=agora - timedelta(hours=1)),
+            ]
         )
         self.db.commit()
 
@@ -114,7 +134,7 @@ class AdminEndpointsTest(unittest.TestCase):
         self.assertNotIn(sessao.token_hash, cabecalho["Authorization"])
 
     def test_rotas_exigem_token_valido(self):
-        for caminho in ("/me", "/resumo", "/usuarios", "/anuncios", "/categorias"):
+        for caminho in ("/me", "/resumo", "/usuarios", "/anuncios", "/categorias", "/perguntas"):
             with self.subTest(caminho=caminho):
                 self.assertEqual(self.client.get(f"/api/v1/admin{caminho}").status_code, 401)
                 resposta = self.client.get(
@@ -143,10 +163,11 @@ class AdminEndpointsTest(unittest.TestCase):
         resposta = self.client.get("/api/v1/admin/resumo", headers=self.entrar())
         self.assertEqual(resposta.status_code, 200, resposta.text)
         resumo = resposta.json()
-        self.assertEqual(resumo["usuarios"]["total"], 2)
+        self.assertEqual(resumo["usuarios"]["total"], 3)
         self.assertEqual(resumo["usuarios"]["administradores"], 1)
         self.assertEqual(resumo["anuncios"]["ativos"], 1)
         self.assertEqual(resumo["categorias"]["ativas"], 2)
+        self.assertEqual(resumo["perguntas"], {"total": 2, "sem_resposta": 1})
 
     def test_gestao_de_usuarios(self):
         cabecalho = self.entrar()
@@ -169,10 +190,10 @@ class AdminEndpointsTest(unittest.TestCase):
         self.assertEqual(self.client.patch(url, json={"email": "x@y.com"}, headers=cabecalho).status_code, 422)
 
         self.assertEqual(self.client.delete(url, headers=cabecalho).status_code, 204)
-        self.assertEqual(self.client.get("/api/v1/admin/usuarios", headers=cabecalho).json()[0]["id"],
-                         str(self.admin_id))
+        ativos = self.client.get("/api/v1/admin/usuarios", headers=cabecalho).json()
+        self.assertNotIn(str(self.usuario_id), [u["id"] for u in ativos])
         com_excluidos = self.client.get("/api/v1/admin/usuarios?incluir_excluidos=true", headers=cabecalho)
-        self.assertEqual(len(com_excluidos.json()), 2)
+        self.assertIn(str(self.usuario_id), [u["id"] for u in com_excluidos.json()])
         self.assertEqual(self.client.patch(url, json={"status": "ATIVO"}, headers=cabecalho).status_code, 409)
 
         restaurado = self.client.post(f"{url}/restaurar", headers=cabecalho)
@@ -229,6 +250,34 @@ class AdminEndpointsTest(unittest.TestCase):
         self.assertEqual(em_uso.status_code, 409)
         livre = self.client.delete(f"/api/v1/admin/categorias/{self.categoria_livre_id}", headers=cabecalho)
         self.assertEqual(livre.status_code, 204)
+
+    def test_moderacao_de_perguntas(self):
+        cabecalho = self.entrar()
+
+        listagem = self.client.get("/api/v1/admin/perguntas", headers=cabecalho)
+        self.assertEqual(listagem.status_code, 200, listagem.text)
+        self.assertEqual([p["id"] for p in listagem.json()], [str(self.pergunta_id), str(self.respondida_id)])
+        primeira = listagem.json()[0]
+        self.assertEqual(primeira["anuncio_titulo"], "Sobras de piso")
+        self.assertEqual(primeira["autor_nome"], "João Souza")
+        self.assertEqual(primeira["vendedor_nome"], "Maria Silva")
+
+        pendentes = self.client.get("/api/v1/admin/perguntas?respondidas=false", headers=cabecalho).json()
+        self.assertEqual([p["id"] for p in pendentes], [str(self.pergunta_id)])
+        busca = self.client.get("/api/v1/admin/perguntas?busca=troca", headers=cabecalho).json()
+        self.assertEqual([p["id"] for p in busca], [str(self.respondida_id)])
+
+        url_resposta = f"/api/v1/admin/perguntas/{self.respondida_id}/resposta"
+        sem_resposta = self.client.delete(url_resposta, headers=cabecalho)
+        self.assertEqual(sem_resposta.status_code, 200, sem_resposta.text)
+        self.assertIsNone(sem_resposta.json()["resposta"])
+        self.assertIsNone(sem_resposta.json()["respondido_em"])
+        self.assertEqual(self.client.delete(url_resposta, headers=cabecalho).status_code, 409)
+
+        url = f"/api/v1/admin/perguntas/{self.pergunta_id}"
+        self.assertEqual(self.client.delete(url, headers=cabecalho).status_code, 204)
+        self.assertEqual(self.client.delete(url, headers=cabecalho).status_code, 404)
+        self.assertIsNone(self.db.get(AnuncioPergunta, self.pergunta_id))
 
 
 if __name__ == "__main__":

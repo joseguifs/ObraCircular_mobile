@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 from app.models.enums import PapelUsuario, StatusAnuncio, StatusUsuario
 from app.schemas.anuncio import AnuncioResponse
+from app.schemas.anuncio_pergunta import AnuncioPerguntaResponse
 from app.schemas.categoria import CategoriaResponse
 from app.schemas.usuario import UsuarioResposta
 
@@ -38,10 +39,16 @@ class ResumoCategorias(BaseModel):
     inativas: int
 
 
+class ResumoPerguntas(BaseModel):
+    total: int
+    sem_resposta: int
+
+
 class ResumoAdmin(BaseModel):
     usuarios: ResumoUsuarios
     anuncios: ResumoAnuncios
     categorias: ResumoCategorias
+    perguntas: ResumoPerguntas
 
 
 class UsuarioAdminResposta(UsuarioResposta):
@@ -79,3 +86,9 @@ class AnuncioAdminAtualizacao(BaseModel):
 
 class CategoriaAdminResposta(CategoriaResponse):
     total_anuncios: int = 0
+
+
+class PerguntaAdminResposta(AnuncioPerguntaResponse):
+    anuncio_titulo: str
+    autor_nome: str
+    vendedor_nome: str
