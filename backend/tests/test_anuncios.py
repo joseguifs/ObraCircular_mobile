@@ -64,6 +64,8 @@ class AnunciosEndpointsTest(unittest.TestCase):
                     email="maria@example.com",
                     senha_hash="hash",
                     status="ATIVO",
+                    chave_pix_tipo="CPF",
+                    chave_pix="52998224725",
                 ),
                 Usuario(
                     id=self.outro_vendedor_id,
@@ -181,6 +183,23 @@ class AnunciosEndpointsTest(unittest.TestCase):
         registro = self.db.get(Anuncio, UUID(str(anuncio["id"])))
         self.assertIsNotNone(registro)
         self.assertIsNotNone(registro.deletado_em)
+
+    def test_exige_chave_pix_para_anunciar_com_preco(self):
+        dados = self.dados_validos()
+        dados["vendedor_id"] = str(self.outro_vendedor_id)
+        dados["endereco_id"] = str(self.outro_endereco_id)
+        resposta = self.client.post("/api/v1/anuncios", json=dados)
+        self.assertEqual(resposta.status_code, 409, resposta.text)
+        self.assertIn("chave Pix", resposta.json()["detail"])
+
+        # Doações não envolvem pagamento, então dispensam a chave.
+        dados["preco"] = 0
+        doacao = self.client.post("/api/v1/anuncios", json=dados)
+        self.assertEqual(doacao.status_code, 201, doacao.text)
+
+        url = f"/api/v1/anuncios/{doacao.json()['id']}"
+        self.assertEqual(self.client.patch(url, json={"preco": 50}).status_code, 409)
+        self.assertEqual(self.client.patch(url, json={"quantidade": 2}).status_code, 200)
 
     def test_rejeita_relacionamentos_invalidos(self):
         dados = self.dados_validos()

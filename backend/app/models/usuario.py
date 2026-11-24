@@ -23,6 +23,11 @@ class Usuario(Base):
             name="status",
         ),
         CheckConstraint("papel IN ('USUARIO', 'ADMIN')", name="papel"),
+        CheckConstraint(
+            "(chave_pix_tipo IS NULL AND chave_pix IS NULL) OR "
+            "(chave_pix_tipo IN ('EMAIL', 'CPF') AND chave_pix IS NOT NULL)",
+            name="chave_pix",
+        ),
         Index("ix_usuarios_status", "status"),
         Index(
             "ix_usuarios_ativos",
@@ -41,6 +46,9 @@ class Usuario(Base):
     senha_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     telefone: Mapped[str | None] = mapped_column(String(20))
     imagem_url: Mapped[str | None] = mapped_column(Text)
+    # Chave Pix (e-mail ou CPF) para a Obra Circular repassar o valor das vendas.
+    chave_pix_tipo: Mapped[str | None] = mapped_column(String(10))
+    chave_pix: Mapped[str | None] = mapped_column(String(77))
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'ATIVO'")
     )

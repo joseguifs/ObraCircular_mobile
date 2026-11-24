@@ -367,6 +367,15 @@ Fluxo:
 
 Reservas vencidas são liberadas automaticamente. Um Pix aprovado depois do vencimento confirma a compra se o anúncio continuar livre; caso contrário, o valor é devolvido automaticamente.
 
+#### Chave Pix do vendedor
+
+O comprador paga para a conta Mercado Pago da Obra Circular, que repassa o valor da venda para a chave Pix do vendedor. Cada usuário cadastra uma chave do tipo **e-mail** ou **CPF**:
+
+- O cadastro da conta não pede a chave. Ela só é pedida quando a pessoa tenta anunciar: a tela de novo anúncio mostra o aviso "Cadastrar chave Pix", que abre a edição do perfil, e bloqueia o envio de anúncio com preço até a chave ser cadastrada.
+- `PATCH /api/v1/usuarios/{id}` cadastra ou troca a chave: `chave_pix_tipo` (`EMAIL` ou `CPF`) e `chave_pix`, sempre juntos. A chave não pode ser removida. O CPF é validado pelos dígitos verificadores e armazenado só com números; o e-mail, em minúsculas (até 77 caracteres). O `POST /api/v1/usuarios` também aceita os dois campos, mas eles são opcionais.
+- As respostas trazem apenas `chave_pix_tipo` e `chave_pix_mascarada` (ex.: `***.982.247-**`, `ma***@gmail.com`). A chave completa nunca é devolvida pela API.
+- Contas sem chave usam o app normalmente (inclusive para comprar), mas só publicam anúncio com preço (ou mudam o preço de uma doação para um valor maior que zero) depois de cadastrar a chave (`409`). O checkout também é recusado (`409`) se o vendedor do anúncio não tiver chave. Doações (R$ 0,00) não precisam de chave.
+
 Configuração (`backend/.env`, veja `.env.example`). Os mesmos nomes com prefixo `OBRA_CIRCULAR_` usados no `.env` da versão web também são aceitos:
 
 - `MP_ACCESS_TOKEN`: access token da conta recebedora, que precisa ter chave Pix cadastrada.

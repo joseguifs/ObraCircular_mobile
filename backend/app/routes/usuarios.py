@@ -47,6 +47,8 @@ def cadastrar_usuario(
         email=str(dados.email).lower(),
         senha_hash=gerar_hash_senha(dados.senha),
         telefone=dados.telefone,
+        chave_pix_tipo=dados.chave_pix_tipo,
+        chave_pix=dados.chave_pix,
     )
 
     db.add(usuario)

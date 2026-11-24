@@ -121,6 +121,14 @@ class PagamentoPixService:
         if valor_total <= 0:
             self.db.rollback()
             raise _erro(status.HTTP_409_CONFLICT, "Anúncios de doação não utilizam pagamento. Combine com o vendedor.")
+        # Sem chave Pix não há como repassar o valor ao vendedor (anúncios anteriores à exigência).
+        chave_vendedor = self.db.scalar(select(Usuario.chave_pix).where(Usuario.id == anuncio.vendedor_id))
+        if not chave_vendedor:
+            self.db.rollback()
+            raise _erro(
+                status.HTTP_409_CONFLICT,
+                "O vendedor ainda não cadastrou a chave Pix para receber. Tente novamente mais tarde.",
+            )
 
         minutos = max(self.settings.mp_checkout_minutes, MINUTOS_MINIMOS_PIX)
         pedido = Pedido(

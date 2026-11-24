@@ -96,7 +96,8 @@ class PagamentoPixTest(unittest.TestCase):
         self.vendedor_id, self.comprador_id, self.outro_id = uuid4(), uuid4(), uuid4()
         self.anuncio_id = uuid4()
         self.db.add_all([
-            Usuario(id=self.vendedor_id, nome="Maria Silva", email="maria@example.com", senha_hash="h", status="ATIVO"),
+            Usuario(id=self.vendedor_id, nome="Maria Silva", email="maria@example.com", senha_hash="h", status="ATIVO",
+                    chave_pix_tipo="EMAIL", chave_pix="maria@example.com"),
             Usuario(id=self.comprador_id, nome="João Souza", email="joao@example.com", senha_hash="h", status="ATIVO"),
             Usuario(id=self.outro_id, nome="Ana Lima", email="ana@example.com", senha_hash="h", status="ATIVO"),
             Anuncio(
@@ -197,6 +198,18 @@ class PagamentoPixTest(unittest.TestCase):
         vencimento = datetime.fromisoformat(payload["date_of_expiration"])
         self.assertEqual(vencimento, datetime.fromisoformat(corpo["expira_em"]))
         self.assertGreater(vencimento - datetime.now(timezone.utc), timedelta(minutes=30))
+
+    def test_vendedor_sem_chave_pix_bloqueia_checkout(self):
+        vendedor = self.db.get(Usuario, self.vendedor_id)
+        vendedor.chave_pix_tipo = vendedor.chave_pix = None
+        self.db.commit()
+
+        resposta = self.checkout()
+
+        self.assertEqual(resposta.status_code, 409, resposta.text)
+        self.assertIn("chave Pix", resposta.json()["detail"])
+        self.assertEqual(self.gateway.criados, [])
+        self.assertEqual(self.anuncio().status, "ATIVO")
 
     def test_sem_url_publica_nao_envia_notification_url_e_usa_email_de_teste(self):
         self.settings.mp_public_base_url = None

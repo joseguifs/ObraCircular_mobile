@@ -64,6 +64,22 @@ def validar_vendedor(vendedor_id: UUID, db: Session) -> None:
         )
 
 
+MENSAGEM_SEM_CHAVE_PIX = (
+    "Cadastre sua chave Pix (e-mail ou CPF) no perfil para anunciar com preço "
+    "e receber o valor das vendas."
+)
+
+
+def validar_chave_pix_do_vendedor(vendedor_id: UUID, db: Session) -> None:
+    """Anúncios com preço são pagos via Pix à Obra Circular, que repassa ao vendedor."""
+    chave = db.scalar(select(Usuario.chave_pix).where(Usuario.id == vendedor_id))
+    if not chave:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=MENSAGEM_SEM_CHAVE_PIX,
+        )
+
+
 def validar_endereco_do_vendedor(endereco_id: UUID, vendedor_id: UUID, db: Session) -> None:
     endereco = db.scalar(
         select(Endereco.id).where(
@@ -96,6 +112,8 @@ def cadastrar_anuncio(dados: AnuncioCreate, db: DbSession) -> Anuncio:
     validar_vendedor(dados.vendedor_id, db)
     validar_categoria(dados.categoria_id, db)
     validar_endereco_do_vendedor(dados.endereco_id, dados.vendedor_id, db)
+    if dados.preco > 0:
+        validar_chave_pix_do_vendedor(dados.vendedor_id, db)
 
     anuncio = Anuncio(
         id=uuid4(),
@@ -146,6 +164,8 @@ def editar_anuncio(anuncio_id: UUID, dados: AnuncioUpdate, db: DbSession) -> Anu
         validar_categoria(alteracoes["categoria_id"], db)
     if "endereco_id" in alteracoes:
         validar_endereco_do_vendedor(alteracoes["endereco_id"], anuncio.vendedor_id, db)
+    if alteracoes.get("preco") and alteracoes["preco"] > 0:
+        validar_chave_pix_do_vendedor(anuncio.vendedor_id, db)
 
     for campo, valor in alteracoes.items():
         setattr(anuncio, campo, valor)

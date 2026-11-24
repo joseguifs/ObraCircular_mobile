@@ -73,3 +73,8 @@ class MetodoPagamento(StrEnum):
     BOLETO = "BOLETO"
     SALDO_MERCADO_PAGO = "SALDO_MERCADO_PAGO"
     OUTRO = "OUTRO"
+
+
+class TipoChavePix(StrEnum):
+    EMAIL = "EMAIL"
+    CPF = "CPF"
