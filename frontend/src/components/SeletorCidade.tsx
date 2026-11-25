@@ -3,6 +3,7 @@ import { useState } from "react";
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { normalizarTextoBusca } from "@/features/anuncios/busca";
 import { CidadeVitrine } from "@/features/anuncios/vitrine";
 import { cores, raios } from "@/theme/tokens";
 
@@ -11,10 +12,6 @@ type Props = {
   cidade: string | null;
   onChange: (cidade: string | null) => void;
 };
-
-function normalizar(texto: string) {
-  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
-}
 
 export function SeletorCidade({ cidades, cidade, onChange }: Props) {
   const [aberto, setAberto] = useState(false);
@@ -50,7 +47,7 @@ export function SeletorCidade({ cidades, cidade, onChange }: Props) {
             </View>
             <TextInput accessibilityLabel="Buscar cidade ou UF" autoCorrect={false} onChangeText={setBusca} placeholder="Buscar cidade ou UF" placeholderTextColor={cores.textoSuave} style={styles.busca} value={busca} />
             <FlatList
-              data={cidades.filter((item) => normalizar(item.rotulo).includes(normalizar(busca)))}
+              data={cidades.filter((item) => normalizarTextoBusca(item.rotulo).includes(normalizarTextoBusca(busca)))}
               keyboardShouldPersistTaps="handled"
               keyExtractor={(item) => item.valor}
               ListHeaderComponent={
